@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free WHOIS domain lookup — check domain registration details, registrar, expiration date, and nameservers. Uses RDAP protocol.">
+  <title>WHOIS Lookup — Free Domain Registration Check</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/whois.html">
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>WHOIS Lookup</h1>
+      <p>Check domain registration info: registrar, expiry date, nameservers. Uses RDAP.</p>
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="domainInput" placeholder="example.com" autofocus autocomplete="off" autocapitalize="none" spellcheck="false">
+      <button id="lookupBtn">Lookup</button>
+    </div>
+
+    <div id="errorContainer"></div>
+    <div id="resultContainer">
+      <div class="empty-state">
+        <p>Enter a domain name to check WHOIS registration details</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const IANA_BOOTSTRAP = 'https://data.iana.org/rdap/dns.json';
+
+    function cleanDomain(input) {
+      return input.trim()
+        .replace(/^https?:\/\//, '')
+        .replace(/\/.*$/, '')
+        .replace(/^www\./, '')
+        .toLowerCase();
+    }
+
+    function showError(msg) {
+      document.getElementById('errorContainer').innerHTML = msg ? `<div class="error-msg">${msg}</div>` : '';
+    }
+
+    function showLoading() {
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Looking up domain registration…</p>
+        </div>`;
+    }
+
+    function formatDate(isoString) {
+      if (!isoString) return '—';
+      return new Date(isoString).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+    }
+
+    function getExpiryStatus(expiryDate) {
+      if (!expiryDate) return { emoji: '❓', class: '', text: 'Unknown' };
+      const exp = new Date(expiryDate);
+      const now = new Date();
+      const days = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+      if (days < 0) return { emoji: '🚫', class: 'expired', text: `Expired ${Math.abs(days)} day${Math.abs(days) > 1 ? 's' : ''} ago` };
+      if (days < 30) return { emoji: '⚠️', class: 'soon', text: `Expires in ${days} day${days > 1 ? 's' : ''}` };
+      if (days < 90) return { emoji: '📅', class: 'approaching', text: `${days} days remaining` };
+      return { emoji: '✅', class: 'ok', text: `${Math.floor(days / 365)}y ${days % 365}d remaining` };
+    }
+
+    function pick(obj, ...keys) {
+      for (const k of keys) if (obj[k] !== undefined) return obj[k];
+      return null;
+    }
+
+    async function rdapQuery(domain) {
+      // Try direct RDAP query — most RDAP servers don't allow CORS,
+      // but the request still gives us useful error info
+      const resp = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
+        headers: { 'Accept': 'application/rdap+json, application/json' }
+      });
+      if (!resp.ok) throw new Error(`RDAP server returned HTTP ${resp.status}`);
+      return resp.json();
+    }
+
+    async function lookupWithProxy(domain) {
+      // Try a public CORS proxy for RDAP (rdap.net may support CORS)
+      const endpoints = [
+        `https://rdap.org/domain/${encodeURIComponent(domain)}`,
+      ];
+
+      for (const url of endpoints) {
+        try {
+          const resp = await fetch(url, {
+            headers: { 'Accept': 'application/rdap+json, application/json' }
+          });
+          if (resp.ok) return resp.json();
+        } catch (e) {
+          continue; // Try next endpoint
+        }
+      }
+      throw new Error('All RDAP endpoints unavailable. The browser may be blocking cross-origin requests. Try a different domain or use a CORS proxy.');
+    }
+
+    function renderResult(domain, data, timeMs) {
+      const statuses = data.status || [];
+      const nameservers = (data.nameservers || []).map(ns => ns.ldhName || ns.unicodeName).filter(Boolean);
+
+      // Try multiple field paths — RDAP responses vary by TLD
+      const registrarName = data.entities?.find(e => e.roles?.includes('registrar'))?.vcardArray?.[1]?.[1]?.[3] || pick(data, 'registrar', 'registrarName') || '—';
+      const expiryDate = pick(data, 'registryExpiryDate', 'expiryDate', 'expires');
+      const regDate = pick(data, 'registrationDate', 'createdDate', 'created');
+      const updateDate = pick(data, 'updatedDate', 'updated');
+
+      const expiryStatus = getExpiryStatus(expiryDate);
+      const statusList = statuses.length > 0 ? statuses.join(', ') : 'Active';
+
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <h3>WHOIS Results for ${domain}</h3>
+            <span class="result-time">${timeMs}ms</span>
+          </div>
+          <div style="padding: 16px;">
+            <div class="whois-field">
+              <div class="label">Domain</div>
+              <div class="value">${domain}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Expiry Status</div>
+              <div class="value">${expiryStatus.emoji} ${expiryStatus.text}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Expiry Date</div>
+              <div class="value">${formatDate(expiryDate)}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Registered</div>
+              <div class="value">${formatDate(regDate)}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Last Updated</div>
+              <div class="value">${formatDate(updateDate)}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Status</div>
+              <div class="value">${statusList}</div>
+            </div>
+            ${nameservers.length > 0 ? `
+            <div class="whois-field">
+              <div class="label">Nameservers</div>
+              <div class="value">${nameservers.join(', ')}</div>
+            </div>` : ''}
+          </div>
+        </div>
+        <p style="font-size:0.75rem;color:var(--muted);margin-top:8px;text-align:center;">
+          Data via RDAP. Some TLDs may not expose full registration details.
+        </p>`;
+    }
+
+    async function doLookup() {
+      const input = document.getElementById('domainInput').value;
+      const domain = cleanDomain(input);
+      if (!domain) {
+        showError('Please enter a valid domain name');
+        return;
+      }
+      if (!domain.includes('.')) {
+        showError('Please enter a complete domain (e.g., example.com)');
+        return;
+      }
+
+      showError('');
+      showLoading();
+      document.getElementById('lookupBtn').disabled = true;
+
+      const start = performance.now();
+      try {
+        const data = await lookupWithProxy(domain);
+        const timeMs = Math.round(performance.now() - start);
+        renderResult(domain, data, timeMs);
+      } catch (err) {
+        const timeMs = Math.round(performance.now() - start);
+        showError(`Lookup failed: ${err.message}. RDAP may not support cross-origin requests from browsers.`);
+        document.getElementById('resultContainer').innerHTML = `
+          <div class="empty-state">
+            <p>RDAP lookup requires CORS support (coming soon via proxy)</p>
+          </div>`;
+      } finally {
+        document.getElementById('lookupBtn').disabled = false;
+      }
+    }
+
+    document.getElementById('domainInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doLookup();
+    });
+    document.getElementById('lookupBtn').addEventListener('click', doLookup);
+    document.getElementById('domainInput').focus();
+  </script>
+</body>
+</html>

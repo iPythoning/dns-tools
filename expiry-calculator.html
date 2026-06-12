@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free domain expiry date calculator — check when your domain expires. Works with any TLD (.com, .org, .net, etc.).">
+  <title>Domain Expiry Calculator — Free Domain Expiration Check</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/expiry-calculator.html">
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>Domain Expiry Calculator</h1>
+      <p>Calculate days until domain expiration and important renewal deadlines.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">
+      <div class="input-group" style="margin-bottom:0;">
+        <input type="text" id="domainInput" placeholder="example.com" autofocus autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button id="lookupBtn" style="flex:0 0 auto;">Check Expiry</button>
+      </div>
+      <p style="font-size:0.8rem;color:var(--muted);">— or —</p>
+      <div class="input-group" style="margin-bottom:0;">
+        <input type="date" id="dateInput">
+        <button id="calcBtn" style="flex:0 0 auto;">Calculate</button>
+      </div>
+    </div>
+
+    <div id="errorContainer"></div>
+    <div id="resultContainer">
+      <div class="empty-state">
+        <p>Enter a domain to look up its expiry via WHOIS,<br>or enter a date to calculate days remaining</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function cleanDomain(input) {
+      return input.trim()
+        .replace(/^https?:\/\//, '')
+        .replace(/\/.*$/, '')
+        .replace(/^www\./, '')
+        .toLowerCase();
+    }
+
+    function showError(msg) {
+      document.getElementById('errorContainer').innerHTML = msg ? `<div class="error-msg">${msg}</div>` : '';
+    }
+
+    function showLoading() {
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Looking up domain expiry…</p>
+        </div>`;
+    }
+
+    function calcDays(expiryDate) {
+      const exp = new Date(expiryDate);
+      const now = new Date();
+      return Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+    }
+
+    function renderExpiryResult(domain, expiryDate, timeMs) {
+      const days = calcDays(expiryDate);
+      const expDate = new Date(expiryDate);
+
+      // Key renewal milestones
+      const milestones = [
+        { label: 'Redemption Grace Period ends', days: days + 30 },
+        { label: 'Registrar auto-renew usually triggers', days: days + 30 },
+        { label: 'ICANN-mandated expiration notice sent', days: days + 30 },
+        { label: 'Expiry Date', days: 0 },
+        { label: 'Grace period (most TLDs end)', days: -30 },
+        { label: 'Redemption period (expensive recovery)', days: -60 },
+        { label: 'Pending Delete (domain released)', days: -65 },
+      ].filter(m => m.days > -80); // Keep relevant milestones
+
+      const statusEmoji = days < 0 ? '🚫' : days < 30 ? '⚠️' : days < 90 ? '📅' : '✅';
+      const statusText = days < 0 ? 'EXPIRED' : days < 30 ? `CRITICAL: ${days} day${days>1?'s':''} left` : days < 90 ? `${days} days remaining` : `${days} days (${Math.floor(days/30)} months)`;
+
+      let milestonesHTML = milestones.map(m => {
+        const isExpiry = m.label === 'Expiry Date';
+        const mDays = isExpiry ? days : m.days;
+        const label = isExpiry ? (days < 0 ? `${Math.abs(days)} days ago` : `in ${days} days`) : (mDays < 0 ? `${Math.abs(mDays)} days ago` : `in ${mDays} days`);
+        return `<tr><td>${m.label}</td><td>${label}</td></tr>`;
+      }).join('');
+
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <h3>${domain ? domain + ' — ' : ''}Expiry Check</h3>
+            <span class="result-time">${timeMs}ms</span>
+          </div>
+          <div style="padding: 16px;">
+            <div class="whois-field">
+              <div class="label">Status</div>
+              <div class="value">${statusEmoji} ${statusText}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Expiry Date</div>
+              <div class="value">${expDate.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Days Until Expiry</div>
+              <div class="value">${days < 0 ? Math.abs(days) + ' days ago (EXPIRED)' : days + ' days'}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Domain Lifecycle Milestones</div>
+              <div class="value" style="padding-top:4px;">
+                <table class="result-table">
+                  <thead><tr><th>Event</th><th>Timing</th></tr></thead>
+                  <tbody>${milestonesHTML}</tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:0.75rem;color:var(--muted);margin-top:8px;text-align:center;">
+          Based on standard TLD lifecycle. Actual grace periods vary by registrar and TLD.
+        </p>`;
+    }
+
+    async function lookupDomainExpiry() {
+      const input = document.getElementById('domainInput').value;
+      const domain = cleanDomain(input);
+      if (!domain || !domain.includes('.')) {
+        showError('Please enter a valid domain name');
+        return;
+      }
+
+      showError('');
+      showLoading();
+      document.getElementById('lookupBtn').disabled = true;
+
+      const start = performance.now();
+      try {
+        const resp = await fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, {
+          headers: { 'Accept': 'application/rdap+json, application/json' }
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        const timeMs = Math.round(performance.now() - start);
+        const expiryDate = data.registryExpiryDate || data.expiryDate || data.expires;
+        if (!expiryDate) throw new Error('Expiry date not available in RDAP response for this TLD');
+        renderExpiryResult(domain, expiryDate, timeMs);
+      } catch (err) {
+        const timeMs = Math.round(performance.now() - start);
+        if (err.message.includes('Failed to fetch')) {
+          showError('RDAP CORS blocked by browser. Use the date calculator below instead.');
+        } else {
+          showError(`Expiry lookup failed: ${err.message}. Use the date calculator below.`);
+        }
+        document.getElementById('resultContainer').innerHTML = `
+          <div class="empty-state">
+            <p>WHOIS lookup blocked by browser CORS policy.<br>Use the date picker below to manually calculate expiry.</p>
+          </div>`;
+      } finally {
+        document.getElementById('lookupBtn').disabled = false;
+      }
+    }
+
+    function calculateFromDate() {
+      const dateVal = document.getElementById('dateInput').value;
+      if (!dateVal) {
+        showError('Please select an expiry date');
+        return;
+      }
+      showError('');
+      const timeMs = 0;
+      renderExpiryResult(null, dateVal, timeMs);
+    }
+
+    document.getElementById('domainInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') lookupDomainExpiry();
+    });
+    document.getElementById('lookupBtn').addEventListener('click', lookupDomainExpiry);
+    document.getElementById('calcBtn').addEventListener('click', calculateFromDate);
+    document.getElementById('domainInput').focus();
+  </script>
+</body>
+</html>

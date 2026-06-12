@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free DNS record lookup tool — query A, AAAA, MX, TXT, CNAME, NS, SOA records. Uses Google DNS-over-HTTPS. Fast, free, no tracking.">
+  <title>DNS Record Lookup — Free Online DNS Query Tool</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/dns-lookup.html">
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>DNS Record Lookup</h1>
+      <p>Query DNS records for any domain. Uses Google DNS-over-HTTPS.</p>
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="domainInput" placeholder="example.com" autofocus autocomplete="off" autocapitalize="none" spellcheck="false">
+      <button id="lookupBtn">Lookup</button>
+    </div>
+
+    <div class="record-types" id="recordTypes">
+      <span class="record-type active" data-type="A">A</span>
+      <span class="record-type" data-type="AAAA">AAAA</span>
+      <span class="record-type" data-type="MX">MX</span>
+      <span class="record-type" data-type="TXT">TXT</span>
+      <span class="record-type" data-type="CNAME">CNAME</span>
+      <span class="record-type" data-type="NS">NS</span>
+      <span class="record-type" data-type="SOA">SOA</span>
+      <span class="record-type" data-type="CAA">CAA</span>
+      <span class="record-type" data-type="PTR">PTR</span>
+    </div>
+
+    <div id="errorContainer"></div>
+    <div id="resultContainer">
+      <div class="empty-state">
+        <p>Enter a domain name and click Lookup to query DNS records</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const GOOGLE_DOH = 'https://dns.google/resolve';
+    const CLOUDFLARE_DOH = 'https://cloudflare-dns.com/dns-query';
+    let activeType = 'A';
+
+    // Record type selector
+    document.getElementById('recordTypes').addEventListener('click', (e) => {
+      if (!e.target.classList.contains('record-type')) return;
+      document.querySelectorAll('.record-type').forEach(el => el.classList.remove('active'));
+      e.target.classList.add('active');
+      activeType = e.target.dataset.type;
+    });
+
+    // Lookup on Enter
+    document.getElementById('domainInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doLookup();
+    });
+
+    document.getElementById('lookupBtn').addEventListener('click', doLookup);
+
+    function cleanDomain(input) {
+      return input.trim()
+        .replace(/^https?:\/\//, '')
+        .replace(/\/.*$/, '')
+        .replace(/^www\./, '')
+        .toLowerCase();
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorContainer');
+      el.innerHTML = msg ? `<div class="error-msg">${msg}</div>` : '';
+    }
+
+    function showLoading() {
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Querying DNS records…</p>
+        </div>`;
+    }
+
+    function showResults(domain, records, timeMs) {
+      if (!records || records.length === 0) {
+        document.getElementById('resultContainer').innerHTML = `
+          <div class="result-card">
+            <div class="result-header">
+              <h3>${domain} — ${activeType} Records</h3>
+              <span class="result-time">${timeMs}ms</span>
+            </div>
+            <div class="empty-state">
+              <p>No ${activeType} records found for ${domain}</p>
+            </div>
+          </div>`;
+        return;
+      }
+
+      let rows = records.map(r => {
+        let val = r.data;
+        if (activeType === 'SOA') {
+          val = `${r.data.split(' ')[0]} ${r.data.split(' ')[1]}`;
+        }
+        const ttl = r.TTL ? `${r.TTL}s` : '—';
+        return `<tr><td>${domain}</td><td>${ttl}</td><td>${val}</td></tr>`;
+      }).join('');
+
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <h3>${domain} — ${activeType} Records (${records.length})</h3>
+            <span class="result-time">${timeMs}ms</span>
+          </div>
+          <table class="result-table">
+            <thead><tr><th>Name</th><th>TTL</th><th>Value</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    async function doLookup() {
+      const input = document.getElementById('domainInput').value;
+      const domain = cleanDomain(input);
+      if (!domain) {
+        showError('Please enter a valid domain name');
+        return;
+      }
+      if (!domain.includes('.')) {
+        showError('Please enter a complete domain (e.g., example.com)');
+        return;
+      }
+
+      showError('');
+      showLoading();
+      document.getElementById('lookupBtn').disabled = true;
+
+      const start = performance.now();
+      try {
+        const url = `${GOOGLE_DOH}?name=${encodeURIComponent(domain)}&type=${activeType}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`DNS query failed: HTTP ${res.status}`);
+        const data = await res.json();
+        const timeMs = Math.round(performance.now() - start);
+
+        if (data.Status !== 0 && data.Status !== undefined) {
+          showError(`DNS query returned error status ${data.Status}. The domain may not exist or the record type may not be configured.`);
+        }
+
+        showResults(domain, data.Answer || [], timeMs);
+      } catch (err) {
+        const timeMs = Math.round(performance.now() - start);
+        showError(`Failed to query DNS: ${err.message}`);
+        showResults(domain, [], timeMs);
+      } finally {
+        document.getElementById('lookupBtn').disabled = false;
+      }
+    }
+
+    // Focus input on load
+    document.getElementById('domainInput').focus();
+  </script>
+</body>
+</html>

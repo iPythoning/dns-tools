@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free SSL certificate checker — verify TLS/SSL certificate validity, issuer, expiry date, and subject. Check any domain's HTTPS certificate.">
+  <title>SSL Certificate Checker — Free TLS/SSL Verification Tool</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/ssl-checker.html">
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>SSL Certificate Checker</h1>
+      <p>Check TLS/SSL certificate details for any domain. Uses crt.sh certificate transparency logs.</p>
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="domainInput" placeholder="example.com" autofocus autocomplete="off" autocapitalize="none" spellcheck="false">
+      <button id="lookupBtn">Check</button>
+    </div>
+
+    <div id="errorContainer"></div>
+    <div id="resultContainer">
+      <div class="empty-state">
+        <p>Enter a domain name to check its SSL/TLS certificate status</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const CRT_SH_API = 'https://crt.sh/json-detail.php';
+
+    function cleanDomain(input) {
+      return input.trim()
+        .replace(/^https?:\/\//, '')
+        .replace(/\/.*$/, '')
+        .replace(/^www\./, '')
+        .replace(/\*\./g, '')
+        .toLowerCase();
+    }
+
+    function showError(msg) {
+      document.getElementById('errorContainer').innerHTML = msg ? `<div class="error-msg">${msg}</div>` : '';
+    }
+
+    function showLoading() {
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Fetching certificate data from CT logs…</p>
+        </div>`;
+    }
+
+    function formatDate(isoString) {
+      if (!isoString) return '—';
+      return new Date(isoString).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+    }
+
+    function getCertStatus(notAfter) {
+      if (!notAfter) return { emoji: '❓', text: 'Unknown' };
+      const exp = new Date(notAfter);
+      const now = new Date();
+      const days = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+      if (days < 0) return { emoji: '🚫', text: 'Expired', cls: 'expired' };
+      if (days < 30) return { emoji: '⚠️', text: `Expires in ${days}d`, cls: 'expiring' };
+      if (days < 90) return { emoji: '📅', text: `${days} days`, cls: 'approaching' };
+      return { emoji: '✅', text: `Valid (${Math.floor(days/30)}mo)`, cls: 'valid' };
+    }
+
+    function renderResults(domain, certs, timeMs) {
+      if (!certs || certs.length === 0) {
+        document.getElementById('resultContainer').innerHTML = `
+          <div class="result-card">
+            <div class="result-header">
+              <h3>SSL Certificate Check — ${domain}</h3>
+              <span class="result-time">${timeMs}ms</span>
+            </div>
+            <div class="empty-state">
+              <p>No certificates found in Certificate Transparency logs for ${domain}</p>
+            </div>
+          </div>`;
+        return;
+      }
+
+      const latest = certs[0];
+      const status = getCertStatus(latest.not_after);
+      const issuer = latest.issuer_text || latest.issuer_name || '—';
+      const subject = latest.subject_text || latest.subject_common_name || '—';
+      const sans = latest.san_list || [];
+
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <h3>SSL Certificate — ${domain}</h3>
+            <span class="result-time">${timeMs}ms</span>
+          </div>
+          <div style="padding: 16px;">
+            <div class="whois-field">
+              <div class="label">Status</div>
+              <div class="value">${status.emoji} ${status.text}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Issuer</div>
+              <div class="value" style="font-size:0.85rem;">${issuer}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Subject</div>
+              <div class="value" style="font-size:0.85rem;">${subject}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Valid From</div>
+              <div class="value">${formatDate(latest.not_before)}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Valid Until</div>
+              <div class="value">${formatDate(latest.not_after)}</div>
+            </div>
+            <div class="whois-field">
+              <div class="label">Serial Number</div>
+              <div class="value" style="font-size:0.8rem;word-break:break-all;">${latest.serial_number || '—'}</div>
+            </div>
+            ${sans.length > 0 ? `
+            <div class="whois-field">
+              <div class="label">Subject Alternative Names (${sans.length})</div>
+              <div class="value" style="font-size:0.8rem;max-height:120px;overflow-y:auto;">${sans.join(', ')}</div>
+            </div>` : ''}
+          </div>
+        </div>
+        ${certs.length > 1 ? `<p style="font-size:0.75rem;color:var(--muted);margin-top:8px;text-align:center;">Showing latest of ${certs.length} certificates found in CT logs</p>` : ''}
+        <p style="font-size:0.75rem;color:var(--muted);margin-top:4px;text-align:center;">Data via Certificate Transparency logs (crt.sh)</p>`;
+    }
+
+    async function doLookup() {
+      const input = document.getElementById('domainInput').value;
+      const domain = cleanDomain(input);
+      if (!domain) {
+        showError('Please enter a valid domain name');
+        return;
+      }
+
+      showError('');
+      showLoading();
+      document.getElementById('lookupBtn').disabled = true;
+
+      const start = performance.now();
+      try {
+        // crt.sh may not support CORS. Try direct, fall back gracefully.
+        const resp = await fetch(`${CRT_SH_API}?domain=${encodeURIComponent(domain)}`);
+        if (!resp.ok) throw new Error(`crt.sh returned HTTP ${resp.status}`);
+        const certs = await resp.json();
+        const timeMs = Math.round(performance.now() - start);
+        renderResults(domain, certs, timeMs);
+      } catch (err) {
+        const timeMs = Math.round(performance.now() - start);
+        if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          showError('crt.sh does not support cross-origin requests from browsers. SSL check requires a backend proxy (coming soon).');
+        } else {
+          showError(`SSL check failed: ${err.message}`);
+        }
+        document.getElementById('resultContainer').innerHTML = `
+          <div class="empty-state">
+            <p>SSL certificate lookup requires CORS support. Check back soon — a proxy backend is in development.</p>
+          </div>`;
+      } finally {
+        document.getElementById('lookupBtn').disabled = false;
+      }
+    }
+
+    document.getElementById('domainInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doLookup();
+    });
+    document.getElementById('lookupBtn').addEventListener('click', doLookup);
+    document.getElementById('domainInput').focus();
+  </script>
+</body>
+</html>
