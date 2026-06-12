@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="What is DNS? Learn how the Domain Name System works, DNS record types explained (A, AAAA, CNAME, MX, TXT, NS), and why DNS matters for your website.">
+  <title>What is DNS? A Complete Guide to the Domain Name System</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/what-is-dns.html">
+  <meta property="og:title" content="What is DNS? A Complete Guide to the Domain Name System">
+  <meta property="og:description" content="Learn how DNS works, DNS record types explained, and why the Domain Name System matters for every website.">
+  <meta property="og:url" content="https://ipythoning.github.io/dns-tools/what-is-dns.html">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "What is DNS? A Complete Guide to the Domain Name System",
+    "description": "Learn how the Domain Name System works, DNS record types explained (A, AAAA, CNAME, MX, TXT, NS), and why DNS matters.",
+    "author": { "@type": "Person", "name": "iPythoning", "url": "https://github.com/iPythoning" },
+    "datePublished": "2026-06-12",
+    "dateModified": "2026-06-12",
+    "mainEntityOfPage": "https://ipythoning.github.io/dns-tools/what-is-dns.html",
+    "publisher": { "@type": "Person", "name": "iPythoning" }
+  }
+  </script>
+  <style>
+    /* Article-specific styles extending styles.css */
+    .article { max-width: 720px; }
+
+    .article-intro {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 32px;
+    }
+
+    .article h2 {
+      font-size: 1.4rem;
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .article h3 {
+      font-size: 1.1rem;
+      margin: 28px 0 12px;
+      color: var(--accent);
+    }
+
+    .article p {
+      margin-bottom: 16px;
+      line-height: 1.75;
+      color: var(--text);
+    }
+
+    .article ul, .article ol {
+      margin-bottom: 20px;
+      padding-left: 24px;
+      line-height: 1.75;
+    }
+
+    .article li { margin-bottom: 6px; }
+    .article code {
+      background: var(--surface);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+      border: 1px solid var(--border);
+    }
+
+    .featured-snippet {
+      background: var(--surface);
+      border: 1px solid var(--accent-dim);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+    .featured-snippet p { margin-bottom: 0; font-size: 1.05rem; }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 32px 0;
+    }
+    .toc h3 { margin-top: 0; color: var(--text); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .toc ol { margin-bottom: 0; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+
+    .record-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin: 20px 0 28px;
+    }
+    .record-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+    }
+    .record-item .type {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 4px;
+    }
+    .record-item .desc {
+      color: var(--muted);
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .tool-cta {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 28px 0;
+    }
+    .tool-cta a {
+      display: inline-block;
+      padding: 10px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+      transition: border-color 150ms, background 150ms;
+    }
+    .tool-cta a:hover { border-color: var(--accent-dim); background: rgba(88, 166, 255, 0.05); }
+
+    .faq-item {
+      margin-bottom: 24px;
+    }
+    .faq-item h3 {
+      color: var(--text);
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+    .faq-item p {
+      color: var(--muted);
+    }
+
+    .breadcrumb {
+      margin-bottom: 24px;
+      font-size: 0.875rem;
+    }
+    .breadcrumb a { color: var(--accent); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>DNS Tools</h1>
+      <p class="subtitle">Free domain &amp; DNS utilities. No ads. No tracking.</p>
+    </div>
+  </header>
+
+  <main class="container article">
+    <div class="breadcrumb">
+      <a href="/dns-tools/">← Back to DNS Tools</a>
+      <span> / </span>
+      <span>What is DNS?</span>
+    </div>
+
+    <h1>What is DNS? A Complete Guide to the Domain Name System</h1>
+
+    <div class="featured-snippet">
+      <p><strong>DNS (Domain Name System)</strong> is the internet's phonebook. It translates human-readable domain names like <code>google.com</code> into machine-readable IP addresses like <code>142.250.80.46</code> that computers use to communicate. Without DNS, you'd need to memorize IP addresses for every website you visit.</p>
+    </div>
+
+    <p class="article-intro">Every time you open a browser and type a URL, DNS works behind the scenes to find the server hosting that website. This process—called DNS resolution—happens in milliseconds and involves multiple servers working together. This guide explains how DNS works, the different types of DNS records, and how to use DNS tools to troubleshoot domain issues.</p>
+
+    <nav class="toc" aria-label="Table of Contents">
+      <h3>Table of Contents</h3>
+      <ol>
+        <li><a href="#how-dns-works">How DNS Works</a></li>
+        <li><a href="#dns-record-types">DNS Record Types Explained</a></li>
+        <li><a href="#dns-lookup-flow">The DNS Lookup Flow (Step by Step)</a></li>
+        <li><a href="#why-dns-matters">Why DNS Matters</a></li>
+        <li><a href="#tools">DNS Tools to Help You</a></li>
+        <li><a href="#faq">Frequently Asked Questions</a></li>
+      </ol>
+    </nav>
+
+    <section id="how-dns-works">
+      <h2>How DNS Works</h2>
+      <p>DNS is a hierarchical, distributed database. Instead of one central server storing all domain-to-IP mappings, the system is spread across millions of servers worldwide. This design makes DNS resilient, scalable, and fast.</p>
+
+      <h3>The Four DNS Servers in a Lookup</h3>
+      <ol>
+        <li><strong>DNS Recursor (Resolver):</strong> Your first stop—typically operated by your ISP or a public service like Google DNS (8.8.8.8) or Cloudflare (1.1.1.1). The recursor receives your query and does the legwork of tracking down the IP address.</li>
+        <li><strong>Root Nameserver:</strong> The top of the DNS hierarchy. There are 13 root server clusters (A through M) operated by organizations like ICANN, Verisign, and NASA. The root server doesn't know the IP, but it knows which TLD server to ask next.</li>
+        <li><strong>TLD Nameserver:</strong> The Top-Level Domain server handles specific extensions like <code>.com</code>, <code>.org</code>, <code>.io</code>. It points to the authoritative nameserver for the domain.</li>
+        <li><strong>Authoritative Nameserver:</strong> The final stop. This server holds the actual DNS records for the domain and returns the IP address (or other requested record) back to the recursor.</li>
+      </ol>
+    </section>
+
+    <section id="dns-record-types">
+      <h2>DNS Record Types Explained</h2>
+      <p>DNS records are instructions stored on authoritative nameservers. Each record type serves a different purpose. Here are the most common ones:</p>
+
+      <div class="record-grid">
+        <div class="record-item">
+          <div class="type">A Record</div>
+          <div class="desc">Maps a domain to an IPv4 address. Example: <code>example.com → 93.184.216.34</code></div>
+        </div>
+        <div class="record-item">
+          <div class="type">AAAA Record</div>
+          <div class="desc">Maps a domain to an IPv6 address. Like A records but for the newer 128-bit addressing scheme.</div>
+        </div>
+        <div class="record-item">
+          <div class="type">CNAME Record</div>
+          <div class="desc">Creates an alias from one domain to another. <code>www.example.com → example.com</code></div>
+        </div>
+        <div class="record-item">
+          <div class="type">MX Record</div>
+          <div class="desc">Mail Exchange—directs email to the correct mail server. Includes a priority value for failover.</div>
+        </div>
+        <div class="record-item">
+          <div class="type">TXT Record</div>
+          <div class="desc">Stores arbitrary text data. Commonly used for SPF, DKIM, DMARC email authentication, and domain verification.</div>
+        </div>
+        <div class="record-item">
+          <div class="type">NS Record</div>
+          <div class="desc">Nameserver—delegates a domain (or subdomain) to a set of authoritative nameservers.</div>
+        </div>
+        <div class="record-item">
+          <div class="type">SOA Record</div>
+          <div class="desc">Start of Authority—contains administrative metadata: primary nameserver, admin email, serial number, and refresh intervals.</div>
+        </div>
+        <div class="record-item">
+          <div class="type">PTR Record</div>
+          <div class="desc">Pointer—reverse DNS lookup. Maps an IP address back to a domain name (the opposite of A/AAAA records).</div>
+        </div>
+      </div>
+
+      <p>You can inspect DNS records for any domain using our <a href="dns-lookup.html">DNS Record Lookup</a> tool—it queries Google DNS over HTTPS and shows A, AAAA, MX, TXT, CNAME, NS, and SOA records in real time.</p>
+    </section>
+
+    <section id="dns-lookup-flow">
+      <h2>The DNS Lookup Flow (Step by Step)</h2>
+      <p>Here's what happens when you type <code>example.com</code> into your browser:</p>
+      <ol>
+        <li><strong>Cache Check:</strong> Your browser, OS, and router each check their local DNS cache. If the IP is cached, the lookup ends here (~0ms).</li>
+        <li><strong>Recursor Query:</strong> If not cached, your device asks the DNS recursor (e.g., your ISP's resolver or 8.8.8.8).</li>
+        <li><strong>Root Server:</strong> The recursor asks a root server: "Who handles <code>.com</code>?" The root responds with the TLD server addresses.</li>
+        <li><strong>TLD Server:</strong> The recursor asks the <code>.com</code> TLD server: "Who handles <code>example.com</code>?" The TLD responds with the authoritative nameserver addresses.</li>
+        <li><strong>Authoritative Server:</strong> The recursor asks the authoritative server: "What's the A record for <code>example.com</code>?" The authoritative server responds with the IP address.</li>
+        <li><strong>Response:</strong> The recursor returns the IP to your browser, which then establishes a TCP connection to the web server.</li>
+      </ol>
+      <p>This entire chain typically completes in <strong>20–120 milliseconds</strong>. Caching at each level makes subsequent lookups nearly instant.</p>
+    </section>
+
+    <section id="why-dns-matters">
+      <h2>Why DNS Matters</h2>
+      <p>DNS isn't just a technical detail—it directly impacts your website's availability, performance, and security:</p>
+      <ul>
+        <li><strong>Availability:</strong> If your DNS is misconfigured or your nameserver goes down, your website becomes unreachable—even if your web server is running perfectly.</li>
+        <li><strong>Performance:</strong> DNS resolution time is part of every page load. Slow DNS = slow website. Using a fast DNS provider can shave 50–200ms off each request.</li>
+        <li><strong>Security:</strong> DNS is a common attack vector. DNSSEC adds cryptographic signatures to prevent DNS spoofing. SPF/DKIM/DMARC (TXT records) protect your domain from email spoofing.</li>
+        <li><strong>Email Deliverability:</strong> Misconfigured MX records mean lost emails. Missing SPF/DKIM records mean your emails land in spam folders.</li>
+        <li><strong>Domain Ownership:</strong> <a href="whois.html">WHOIS records</a> show domain registration details. Monitoring your domain expiry date prevents accidental expiration—a common cause of downtime.</li>
+      </ul>
+    </section>
+
+    <section id="tools">
+      <h2>DNS Tools to Help You</h2>
+      <p>We built free DNS tools to help you inspect, troubleshoot, and monitor your domains—no signup, no ads, no tracking:</p>
+
+      <div class="tool-cta">
+        <a href="dns-lookup.html">🔍 DNS Record Lookup</a>
+        <a href="whois.html">📋 WHOIS Lookup</a>
+        <a href="ssl-checker.html">🔒 SSL Certificate Checker</a>
+        <a href="expiry-calculator.html">📅 Domain Expiry Calculator</a>
+      </div>
+    </section>
+
+    <section id="faq">
+      <h2>Frequently Asked Questions</h2>
+
+      <div class="faq-item">
+        <h3>What does DNS stand for?</h3>
+        <p>DNS stands for Domain Name System. It's the system that translates domain names (like <code>google.com</code>) into IP addresses (like <code>142.250.80.46</code>) that computers use to route traffic.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How do I check my domain's DNS records?</h3>
+        <p>Use our free <a href="dns-lookup.html">DNS Record Lookup</a> tool. Enter your domain, select the record type (A, MX, TXT, etc.), and see the results instantly. You can also use the command line: <code>dig example.com A</code> or <code>nslookup example.com</code>.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How long do DNS changes take to propagate?</h3>
+        <p>DNS changes typically propagate within minutes to 48 hours, depending on the TTL (Time-To-Live) value set on your records. Most providers now support propagation in under 15 minutes. Use our DNS lookup tool to check if changes have propagated by querying against Google's public DNS.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>What's the difference between A and AAAA records?</h3>
+        <p>A records map a domain to an IPv4 address (32-bit, e.g., <code>192.0.2.1</code>). AAAA records map to an IPv6 address (128-bit, e.g., <code>2001:db8::1</code>). Most modern websites support both, with IPv6 adoption at roughly 45% globally as of 2026.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How do I find out when my domain expires?</h3>
+        <p>Use our <a href="whois.html">WHOIS Lookup</a> tool to see your domain's registration details including the expiration date, registrar, and name servers. You can also use our <a href="expiry-calculator.html">Domain Expiry Calculator</a> to see exactly how many days remain.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>What is DNSSEC?</h3>
+        <p>DNSSEC (Domain Name System Security Extensions) adds cryptographic signatures to DNS records, allowing resolvers to verify that the response hasn't been tampered with. It prevents DNS cache poisoning attacks. Most major TLDs (<code>.com</code>, <code>.org</code>, <code>.io</code>) support DNSSEC.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>Built by <a href="https://github.com/iPythoning">iPythoning</a>. Data via Google DNS, Cloudflare, RDAP.</p>
+      <nav>
+        <a href="https://github.com/iPythoning/dns-tools">GitHub</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

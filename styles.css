@@ -71,6 +71,7 @@ main { flex: 1; padding: 40px 0 60px; }
 }
 .tool-tag.ready { background: rgba(63, 185, 80, 0.15); color: var(--green); }
 .tool-tag.wip { background: rgba(210, 153, 29, 0.15); color: var(--orange); }
+.tool-tag.guide { background: rgba(88, 166, 255, 0.12); color: var(--accent); }
 
 /* Tool pages */
 .tool-header { margin-bottom: 32px; }
