@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="How to clear DNS cache on macOS, Windows, Linux, Chrome, Firefox, and routers. Step-by-step commands for flushing DNS cache and verifying changes took effect.">
+  <title>How to Clear DNS Cache — macOS, Windows, Linux & Browser Guide</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/clear-dns-cache.html">
+  <meta property="og:title" content="How to Clear DNS Cache — macOS, Windows, Linux & Browser Guide">
+  <meta property="og:description" content="Step-by-step guide to flushing DNS cache on every platform. Commands for macOS, Windows, Linux, Chrome, Firefox, Edge, and home routers. Verify your DNS cache is cleared.">
+  <meta property="og:url" content="https://ipythoning.github.io/dns-tools/clear-dns-cache.html">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Clear DNS Cache — macOS, Windows, Linux & Browser Guide",
+    "description": "Complete guide to flushing DNS cache on every major platform: macOS, Windows, Linux, Chrome, Firefox, Edge, Safari, and home routers. Includes commands, verification steps, and troubleshooting.",
+    "author": { "@type": "Person", "name": "iPythoning", "url": "https://github.com/iPythoning" },
+    "datePublished": "2026-06-12",
+    "dateModified": "2026-06-12",
+    "mainEntityOfPage": "https://ipythoning.github.io/dns-tools/clear-dns-cache.html",
+    "publisher": { "@type": "Person", "name": "iPythoning" }
+  }
+  </script>
+  <style>
+    .article { max-width: 720px; }
+
+    .article-intro {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 32px;
+    }
+
+    .article h2 {
+      font-size: 1.4rem;
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .article h3 {
+      font-size: 1.1rem;
+      margin: 28px 0 12px;
+      color: var(--accent);
+    }
+
+    .article p, .article li {
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .article ul, .article ol {
+      padding-left: 24px;
+      margin-bottom: 20px;
+    }
+
+    .article code {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+    }
+
+    .article pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    .article pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      line-height: 1.6;
+    }
+
+    .os-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .os-card h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .os-card .os-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      background: var(--accent-dim);
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .cmd-block {
+      margin-bottom: 16px;
+    }
+
+    .cmd-block strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.9rem;
+      color: var(--text-dim, #999);
+    }
+
+    .tool-cta {
+      background: linear-gradient(135deg, var(--accent-dim), #1a5fb4);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+
+    .tool-cta p { color: #fff; margin-bottom: 8px; }
+
+    .tool-cta a {
+      color: #fff;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .note {
+      background: #fff8e1;
+      border-left: 4px solid #ffc107;
+      padding: 12px 16px;
+      margin: 16px 0;
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    .note p { margin: 4px 0; font-size: 0.95rem; }
+
+    .faq-item {
+      margin-bottom: 24px;
+    }
+
+    .faq-item h3 { margin-bottom: 8px; }
+
+    .quick-ref {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .quick-ref th, .quick-ref td {
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+
+    .quick-ref th {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.85rem;
+    }
+
+    .quick-ref td:first-child {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .quick-ref code {
+      font-size: 0.85em;
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>How to Clear DNS Cache</h1>
+      <p>Step-by-step commands to flush DNS cache on macOS, Windows, Linux, browsers, and routers — plus how to verify the flush worked.</p>
+    </div>
+
+    <article class="article">
+      <p class="article-intro">
+        DNS cache stores recently resolved domain-to-IP mappings so your computer doesn't have to query DNS servers for every request. But when DNS records change — after migrating hosting, updating MX records, or switching CDN providers — <strong>stale cache entries can send you to old servers</strong> long after the actual records have updated. This guide covers exactly how to clear DNS cache on every major platform, browser, and even your home router.
+      </p>
+
+      <h2>What Is DNS Cache?</h2>
+      <p>
+        DNS cache is a temporary database maintained by your operating system, browser, and router that stores the results of recent DNS lookups. When you visit <code>example.com</code>, your computer asks a DNS resolver "what's the IP address?" The answer gets cached so the next visit skips the lookup entirely — making page loads faster. But this speed comes at a cost: <strong>if the DNS records change, your cache still points to the old IP</strong> until it expires (based on TTL) or you manually flush it.
+      </p>
+      <p>
+        There are actually <strong>four layers</strong> where DNS cache can live:
+      </p>
+      <ol>
+        <li><strong>Browser cache</strong> — Chrome, Firefox, Edge each maintain their own DNS cache (typically 1–2 minutes)</li>
+        <li><strong>OS cache</strong> — macOS, Windows, and Linux each have a system-level DNS resolver cache</li>
+        <li><strong>Router cache</strong> — Your home/office router often runs a DNS proxy with its own cache</li>
+        <li><strong>ISP resolver cache</strong> — Your internet provider's DNS servers cache records too (you can't flush this one)</li>
+      </ol>
+
+      <div class="tool-cta">
+        <p><strong>🔍 Check if your DNS changes are live:</strong> Use our free <a href="dns-lookup.html">DNS Record Lookup</a> to query Google Public DNS (8.8.8.8) and see current record values — bypasses your local cache entirely.</p>
+      </div>
+
+      <h2>Quick Reference: All Flush Commands</h2>
+
+      <table class="quick-ref">
+        <thead>
+          <tr>
+            <th>Platform</th>
+            <th>Command</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>macOS Sequoia / Sonoma</td>
+            <td><code>sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder</code></td>
+            <td>Works on macOS 10.7+</td>
+          </tr>
+          <tr>
+            <td>macOS (older)</td>
+            <td><code>sudo killall -HUP mDNSResponder</code></td>
+            <td>10.7 – 14.x</td>
+          </tr>
+          <tr>
+            <td>Windows 11 / 10</td>
+            <td><code>ipconfig /flushdns</code></td>
+            <td>Run in Command Prompt (Admin)</td>
+          </tr>
+          <tr>
+            <td>Linux (systemd-resolved)</td>
+            <td><code>sudo resolvectl flush-caches</code></td>
+            <td>Ubuntu 18.04+, Fedora 33+</td>
+          </tr>
+          <tr>
+            <td>Linux (nscd)</td>
+            <td><code>sudo service nscd restart</code></td>
+            <td>Older distros</td>
+          </tr>
+          <tr>
+            <td>Linux (dnsmasq)</td>
+            <td><code>sudo systemctl restart dnsmasq</code></td>
+            <td>Common on servers</td>
+          </tr>
+          <tr>
+            <td>Chrome</td>
+            <td><code>chrome://net-internals/#dns</code> → "Clear host cache"</td>
+            <td>Also clears socket pools</td>
+          </tr>
+          <tr>
+            <td>Firefox</td>
+            <td><code>about:networking#dns</code> → "Clear DNS Cache"</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Edge</td>
+            <td><code>edge://net-internals/#dns</code> → "Clear host cache"</td>
+            <td>Same engine as Chrome</td>
+          </tr>
+          <tr>
+            <td>Home Router</td>
+            <td>Power-cycle or admin panel → "Flush DNS" / Reboot</td>
+            <td>Varies by model</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>macOS: Clear DNS Cache</h2>
+      <p>
+        macOS uses <code>mDNSResponder</code> for DNS resolution. The flush command has changed slightly across versions, but the core approach is the same.
+      </p>
+
+      <div class="os-card">
+        <h3><span class="os-label">macOS</span> Sequoia 15 / Sonoma 14 / Ventura 13</h3>
+        <div class="cmd-block">
+          <strong>Flush DNS cache:</strong>
+          <pre><code>sudo dscacheutil -flushcache
+sudo killall -HUP mDNSResponder</code></pre>
+        </div>
+        <p>Enter your admin password when prompted. The first command flushes the directory service cache (which includes DNS); the second restarts the mDNS responder daemon. There's no output on success — that means it worked.</p>
+      </div>
+
+      <div class="os-card">
+        <h3><span class="os-label">macOS</span> Monterey 12 / Big Sur 11 / Catalina 10.15</h3>
+        <div class="cmd-block">
+          <strong>Same command:</strong>
+          <pre><code>sudo dscacheutil -flushcache
+sudo killall -HUP mDNSResponder</code></pre>
+        </div>
+        <p>This command has been stable since macOS 10.7 Lion. On older versions (10.6 and below), use <code>sudo dscacheutil -flushcache</code> alone.</p>
+      </div>
+
+      <div class="cmd-block">
+        <strong>Verify DNS cache was flushed (macOS):</strong>
+        <pre><code>sudo dscacheutil -cachedump -entries host 2>/dev/null | head -20</code></pre>
+        <p>This shows current DNS cache entries. Right after flushing, the output should be empty or nearly empty.</p>
+      </div>
+
+      <h2>Windows: Clear DNS Cache</h2>
+
+      <div class="os-card">
+        <h3><span class="os-label">Windows</span> 11 / 10 / 8.1 / 8</h3>
+        <div class="cmd-block">
+          <strong>Flush DNS cache:</strong>
+          <pre><code>ipconfig /flushdns</code></pre>
+        </div>
+        <p>You should see: <code>Successfully flushed the DNS Resolver Cache.</code></p>
+      </div>
+
+      <div class="os-card">
+        <h3>Additional Windows DNS Commands</h3>
+        <div class="cmd-block">
+          <strong>View current DNS cache:</strong>
+          <pre><code>ipconfig /displaydns</code></pre>
+        </div>
+        <div class="cmd-block">
+          <strong>Reset all network settings (nuclear option):</strong>
+          <pre><code>netsh int ip reset
+netsh winsock reset</code></pre>
+        </div>
+        <p class="note"><strong>⚠️ Note:</strong> The <code>netsh</code> reset commands require a reboot and will reset all TCP/IP settings — not just DNS. Use only when <code>ipconfig /flushdns</code> doesn't resolve the issue.</p>
+      </div>
+
+      <h2>Linux: Clear DNS Cache</h2>
+      <p>
+        Linux DNS caching depends on which resolver your distribution uses. Modern distributions (Ubuntu 18.04+, Fedora 33+, Debian 12+) use <code>systemd-resolved</code>. Older systems may use <code>nscd</code> or <code>dnsmasq</code>.
+      </p>
+
+      <div class="os-card">
+        <h3><span class="os-label">Linux</span> systemd-resolved (Ubuntu, Fedora, Debian, Arch)</h3>
+        <div class="cmd-block">
+          <strong>Flush DNS cache:</strong>
+          <pre><code>sudo resolvectl flush-caches</code></pre>
+        </div>
+        <div class="cmd-block">
+          <strong>Check cache statistics:</strong>
+          <pre><code>sudo resolvectl statistics</code></pre>
+        </div>
+        <p>If <code>resolvectl</code> isn't found, try the older command name: <code>sudo systemd-resolve --flush-caches</code>.</p>
+      </div>
+
+      <div class="os-card">
+        <h3><span class="os-label">Linux</span> nscd (Name Service Cache Daemon)</h3>
+        <div class="cmd-block">
+          <strong>Restart nscd to clear all caches:</strong>
+          <pre><code>sudo service nscd restart
+# or
+sudo systemctl restart nscd</code></pre>
+        </div>
+        <div class="cmd-block">
+          <strong>Flush only DNS cache (not passwd/group):</strong>
+          <pre><code>sudo nscd -i hosts</code></pre>
+        </div>
+      </div>
+
+      <div class="os-card">
+        <h3><span class="os-label">Linux</span> dnsmasq (common on servers &amp; routers)</h3>
+        <div class="cmd-block">
+          <strong>Restart dnsmasq:</strong>
+          <pre><code>sudo systemctl restart dnsmasq</code></pre>
+        </div>
+        <div class="cmd-block">
+          <strong>Clear cache without restart:</strong>
+          <pre><code>sudo killall -USR1 dnsmasq</code></pre>
+        </div>
+      </div>
+
+      <h2>Browser DNS Cache</h2>
+      <p>
+        Browsers maintain their own DNS cache independent of the OS. If you've cleared the OS cache but still see old DNS results in your browser, the browser cache is the culprit. Each browser has an internal page for network debugging.
+      </p>
+
+      <div class="os-card">
+        <h3><span class="os-label">Chrome</span> / Brave / Arc / Chromium</h3>
+        <ol>
+          <li>Open <code>chrome://net-internals/#dns</code></li>
+          <li>Click <strong>"Clear host cache"</strong></li>
+          <li>Optionally: go to <code>chrome://net-internals/#sockets</code> → "Flush socket pools" (clears idle TCP connections to old IPs)</li>
+        </ol>
+        <p>No restart needed — the flush takes effect immediately for new connections.</p>
+      </div>
+
+      <div class="os-card">
+        <h3><span class="os-label">Firefox</span></h3>
+        <ol>
+          <li>Open <code>about:networking#dns</code></li>
+          <li>Click <strong>"Clear DNS Cache"</strong></li>
+        </ol>
+        <p>Firefox's DNS cache TTL is 60 seconds by default, so it usually clears faster than Chrome's.</p>
+      </div>
+
+      <div class="os-card">
+        <h3><span class="os-label">Edge</span></h3>
+        <ol>
+          <li>Open <code>edge://net-internals/#dns</code></li>
+          <li>Click <strong>"Clear host cache"</strong></li>
+        </ol>
+        <p>Edge uses the Chromium engine, so the process is identical to Chrome.</p>
+      </div>
+
+      <div class="os-card">
+        <h3><span class="os-label">Safari</span></h3>
+        <p>Safari doesn't have a standalone DNS cache clear. Instead:</p>
+        <ol>
+          <li>Menu bar → <strong>Develop</strong> → <strong>Empty Caches</strong> (<code>Cmd+Option+E</code>)</li>
+          <li>If the Develop menu isn't visible: Safari → Settings → Advanced → check "Show Develop menu in menu bar"</li>
+        </ol>
+        <p>This clears all Safari caches including DNS. For a more thorough flush, quit Safari and clear the OS-level DNS cache (above) before reopening.</p>
+      </div>
+
+      <h2>Router &amp; Modem DNS Cache</h2>
+      <p>
+        Most home routers run a DNS proxy (often dnsmasq) that caches lookups for every device on your network. If every device on your network sees stale results, the router is the likely culprit.
+      </p>
+
+      <div class="os-card">
+        <h3>How to Clear Router DNS Cache</h3>
+        <ol>
+          <li><strong>Power-cycle:</strong> Unplug the router, wait 30 seconds, plug it back in. This is the simplest method and works for all consumer routers.</li>
+          <li><strong>Admin panel:</strong> Log into your router's admin page (typically <code>192.168.1.1</code> or <code>192.168.0.1</code>), find the DNS or Advanced settings section, and look for "Flush DNS" or "Clear DNS Cache".</li>
+          <li><strong>Change DNS servers:</strong> Some routers only flush cache when you switch DNS providers. Temporarily switch from your ISP's DNS to Cloudflare (1.1.1.1) or Google (8.8.8.8) and back.</li>
+        </ol>
+      </div>
+
+      <div class="tool-cta">
+        <p><strong>🛠 Verify DNS changes are live across the internet:</strong> Use our <a href="dns-lookup.html">DNS Record Lookup</a> — queries Google's public DNS (8.8.8.8) directly, so it shows what the rest of the world sees, not your local cache. Also check <a href="what-is-dns.html">What is DNS?</a> to understand TTL and propagation timing.</p>
+      </div>
+
+      <h2>How to Verify DNS Cache Is Cleared</h2>
+      <p>
+        After flushing, how do you know it actually worked? Here's a systematic verification approach:
+      </p>
+
+      <h3>1. Check Your DNS Records From Outside</h3>
+      <p>
+        Use our <a href="dns-lookup.html">DNS Record Lookup</a> tool to query the domain. It queries Google's public DNS (8.8.8.8), bypassing your local cache entirely. Compare what you see in the tool with what you see locally.
+      </p>
+
+      <h3>2. Compare With Command Line (post-flush)</h3>
+      <div class="cmd-block">
+        <strong>macOS / Linux:</strong>
+        <pre><code>dig example.com A +short</code></pre>
+      </div>
+      <div class="cmd-block">
+        <strong>Windows:</strong>
+        <pre><code>nslookup example.com</code></pre>
+      </div>
+
+      <h3>3. Use Multiple Resolvers</h3>
+      <p>Query different public DNS servers to see if propagation is complete:</p>
+      <pre><code>dig example.com @8.8.8.8 +short     # Google
+dig example.com @1.1.1.1 +short     # Cloudflare
+dig example.com @9.9.9.9 +short     # Quad9</code></pre>
+      <p>If all return the same new IP, propagation is complete. If some return old values, DNS TTL hasn't expired on those resolvers yet — wait and check again.</p>
+
+      <h2>When Should You Clear DNS Cache?</h2>
+      <p>Common scenarios where flushing DNS cache solves the problem:</p>
+      <ul>
+        <li><strong>After changing web hosting</strong> — Your domain points to the new server's IP, but your computer still resolves to the old one</li>
+        <li><strong>After updating DNS records</strong> — A, CNAME, MX changes that haven't "taken effect" on your machine</li>
+        <li><strong>After switching CDN providers</strong> — Cloudflare, Fastly, or Akamai changes not reflecting locally</li>
+        <li><strong>Getting "Server not found" errors</strong> — For sites you know are up and accessible from other networks</li>
+        <li><strong>DNS spoofing concerns</strong> — If you suspect DNS cache poisoning attacks (rare but serious)</li>
+        <li><strong>VPN disconnect issues</strong> — DNS cache can retain VPN-specific entries after disconnecting</li>
+        <li><strong>Local development</strong> — Switching between local/staging/production servers via hosts file and DNS</li>
+      </ul>
+
+      <h2>Troubleshooting: Flush Didn't Work</h2>
+      <p>You ran the flush command but still see old DNS results. Here's what to check, in order:</p>
+
+      <ol>
+        <li><strong>Browser cache is the culprit.</strong> After flushing the OS cache, restart your browser completely (not just close tabs — quit the application). Or clear the browser's DNS cache using the internal pages shown above.</li>
+        <li><strong>Your router is caching.</strong> If multiple devices on the same network see old results, power-cycle the router.</li>
+        <li><strong>TTL hasn't expired on upstream resolvers.</strong> Your ISP's DNS servers and public resolvers like Google (8.8.8.8) cache records based on TTL. Check the SOA record's <code>minimum</code> TTL field to see how long other resolvers will cache the old value. Use our <a href="dns-lookup.html">DNS Record Lookup</a> and select "SOA" to check.</li>
+        <li><strong>You're checking the wrong domain.</strong> Verify you're querying the exact domain you changed — <code>www.example.com</code> and <code>example.com</code> are separate DNS records with separate caches.</li>
+        <li><strong>The DNS change hasn't propagated yet.</strong> If you just made the change, give it 5–30 minutes. Check propagation with a tool like <a href="https://www.whatsmydns.net" rel="nofollow">whatsmydns.net</a> to see results from DNS servers worldwide.</li>
+      </ol>
+
+      <div class="tool-cta">
+        <p><strong>🔧 Still seeing old records?</strong> Try our <a href="dns-lookup.html">DNS Record Lookup</a> against multiple record types (A, AAAA, CNAME, MX, TXT) simultaneously. Cross-reference with <a href="whois.html">WHOIS Lookup</a> to confirm the domain's nameservers match your registrar settings.</p>
+      </div>
+
+      <h2>FAQ</h2>
+
+      <div class="faq-item">
+        <h3>How often should I clear DNS cache?</h3>
+        <p>You rarely need to clear DNS cache proactively. Only flush when you've made DNS changes and need to see the new results immediately, or when you're experiencing DNS-related connectivity issues. Normal DNS cache auto-expires based on TTL values (typically 300–86400 seconds). Flushing too frequently just slows down your browsing since every lookup needs a fresh query.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Does clearing DNS cache affect browsing speed?</h3>
+        <p>Temporarily, yes. After flushing, your computer must re-resolve every domain from scratch, adding 20–100ms per new lookup until the cache rebuilds. This is only noticeable for the first few minutes of browsing after a flush. The cache rebuilds naturally as you visit sites.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Can I clear ISP-level DNS cache?</h3>
+        <p>No — you cannot clear your internet provider's DNS resolver cache. ISP resolvers cache records based on the TTL set by the domain's authoritative nameservers. If you need to bypass ISP caching quickly, switch your DNS to a public resolver like Google (8.8.8.8) or Cloudflare (1.1.1.1) in your network settings. Alternatively, use our <a href="dns-lookup.html">DNS Record Lookup</a> which always queries Google's DNS directly and returns fresh results.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Does flushing DNS cache fix "DNS_PROBE_FINISHED_NXDOMAIN" errors?</h3>
+        <p>Sometimes. The <code>DNS_PROBE_FINISHED_NXDOMAIN</code> error means the DNS resolver returned "domain doesn't exist." If this error appears for a site you know exists, flushing the DNS cache and restarting your browser can resolve it. If it persists, try switching your DNS server (to 8.8.8.8 or 1.1.1.1) or check if the site is actually down using our <a href="dns-lookup.html">DNS Record Lookup</a>.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>What's the difference between DNS cache and browser cache?</h3>
+        <p>DNS cache maps <strong>domain names to IP addresses</strong> (e.g., <code>example.com → 93.184.216.34</code>). Browser cache stores <strong>web content</strong> (HTML, CSS, JavaScript, images) so pages load faster on repeat visits. Clearing one doesn't clear the other. For DNS-related issues, flush DNS cache. For stale page content after a site update, clear browser cache.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Can DNS caching cause security issues?</h3>
+        <p>In rare cases, yes. DNS cache poisoning (or DNS spoofing) is an attack where malicious DNS data is injected into a resolver's cache, redirecting users to fraudulent sites. Modern DNS resolvers use DNSSEC to cryptographically verify responses and prevent poisoning. Flushing DNS cache is a mitigation step if you suspect cache poisoning. For more on DNS security, see our <a href="dns-record-types.html">DNS Record Types guide</a> which covers DNSSEC (covered in DNSKEY, DS, and RRSIG record sections).</p>
+      </div>
+    </article>
+  </main>
+  <footer>
+    <div class="container">
+      <p>Built by <a href="https://github.com/iPythoning">iPythoning</a>. Data via Google DNS, Cloudflare, RDAP.</p>
+      <nav>
+        <a href="index.html">Home</a> · <a href="what-is-dns.html">What is DNS?</a> · <a href="dns-record-types.html">Record Types</a> · <a href="how-to-check-dns-records.html">Check DNS</a> · <a href="https://github.com/iPythoning/dns-tools">GitHub</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
