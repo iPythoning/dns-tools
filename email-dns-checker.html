@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free email DNS checker — verify SPF, DKIM, DMARC, MX records for any domain. Check email deliverability configuration in seconds.">
+  <title>Email DNS Checker — SPF, DKIM, DMARC, MX Record Check</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/email-dns-checker.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Email DNS Checker",
+    "url": "https://ipythoning.github.io/dns-tools/email-dns-checker.html",
+    "description": "Check email DNS configuration — SPF, DKIM, DMARC, and MX records. Verify email deliverability and security settings in one click.",
+    "applicationCategory": "DeveloperApplication",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>Email DNS Checker</h1>
+      <p>Verify SPF, DKIM, DMARC, and MX records for any domain. Essential for email deliverability and security.</p>
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="domainInput" placeholder="example.com" autofocus autocomplete="off" autocapitalize="none" spellcheck="false">
+      <button id="checkBtn">Check DNS</button>
+    </div>
+
+    <div id="errorContainer"></div>
+    <div id="resultContainer">
+      <div class="empty-state">
+        <p>Enter a domain name and click Check to verify its email DNS configuration</p>
+      </div>
+    </div>
+
+    <section class="info-section" id="infoSection" style="display:none;">
+      <h2>Email DNS Records Explained</h2>
+      <div class="records-guide">
+        <div class="guide-item">
+          <strong>SPF (Sender Policy Framework)</strong>
+          <p>A TXT record listing authorized mail servers. Prevents email spoofing. Example: <code>v=spf1 include:_spf.google.com ~all</code></p>
+        </div>
+        <div class="guide-item">
+          <strong>DKIM (DomainKeys Identified Mail)</strong>
+          <p>Adds a digital signature to outgoing emails. Receiving servers verify the signature against the domain's public key in DNS. Selectors like <code>google._domainkey.example.com</code> or <code>selector1._domainkey.example.com</code>.</p>
+        </div>
+        <div class="guide-item">
+          <strong>DMARC (Domain-based Message Authentication)</strong>
+          <p>A TXT record at <code>_dmarc.example.com</code> that tells receiving servers how to handle emails that fail SPF/DKIM. Example: <code>v=DMARC1; p=quarantine; rua=mailto:dmarc@example.com</code></p>
+        </div>
+        <div class="guide-item">
+          <strong>MX (Mail Exchange)</strong>
+          <p>Directs incoming email to the correct mail servers. Essential for receiving email. Example: <code>aspmx.l.google.com</code> with priority 1.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const GOOGLE_DOH = 'https://dns.google/resolve';
+    const DKIM_SELECTORS = ['google', 'default', 'selector1', 'selector2', 'dkim', 'mail', 's1', 's2', 'k1', 'mandrill', 'mailgun', 'sendgrid', 'amazonses', 'protonmail', 'zoho', 'm365'];
+
+    document.getElementById('domainInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doCheck();
+    });
+    document.getElementById('checkBtn').addEventListener('click', doCheck);
+
+    function cleanDomain(input) {
+      return input.trim()
+        .replace(/^https?:\/\//, '')
+        .replace(/\/.*$/, '')
+        .replace(/^www\./, '')
+        .toLowerCase();
+    }
+
+    function showError(msg) {
+      document.getElementById('errorContainer').innerHTML = msg ? `<div class="error-msg">${msg}</div>` : '';
+    }
+
+    async function queryDNS(name, type) {
+      const url = `${GOOGLE_DOH}?name=${encodeURIComponent(name)}&type=${type}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.Answer || [];
+    }
+
+    function statusBadge(ok, text) {
+      const cls = ok ? 'status-ok' : 'status-fail';
+      const label = ok ? '✓ ' + text : '✗ ' + text;
+      return `<span class="status-badge ${cls}">${label}</span>`;
+    }
+
+    function renderRecord(title, records, detailsHtml) {
+      const hasRecords = records && records.length > 0;
+      let rows = '';
+      if (hasRecords) {
+        rows = records.map(r => `<tr><td>${r.name || '—'}</td><td>${r.TTL || '—'}s</td><td class="record-data">${r.data.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td></tr>`).join('');
+      }
+      return `
+        <div class="result-card">
+          <div class="result-header">
+            <h3>${title}</h3>
+            ${statusBadge(hasRecords, hasRecords ? 'Configured' : 'Not Found')}
+          </div>
+          ${hasRecords ? `<table class="result-table"><thead><tr><th>Name</th><th>TTL</th><th>Value</th></tr></thead><tbody>${rows}</tbody></table>` : '<div class="empty-state" style="padding:12px;"><p>No records found</p></div>'}
+          ${detailsHtml || ''}
+        </div>`;
+    }
+
+    function renderDKIM(domain, dkimResults) {
+      const found = dkimResults.filter(r => r.records && r.records.length > 0);
+      const notFound = dkimResults.filter(r => !r.records || r.records.length === 0);
+
+      let html = '<div class="result-card"><div class="result-header"><h3>DKIM (DomainKeys Identified Mail)</h3>';
+      html += statusBadge(found.length > 0, found.length > 0 ? `${found.length} selector(s) found` : 'Not Found');
+
+      if (found.length === 0 && notFound.length > 0) {
+        html += `<p style="margin:8px 0;color:var(--text-secondary, #666);">Checked ${DKIM_SELECTORS.length} selectors. No DKIM records found. Common selectors include: google, default, selector1.</p>`;
+      }
+      html += '</div>';
+
+      if (found.length > 0) {
+        found.forEach(r => {
+          html += `<div style="padding:8px 16px;border-top:1px solid var(--border, #e0e0e0);"><strong>${r.selector}._domainkey.${domain}</strong>`;
+          r.records.forEach(rec => {
+            html += `<div style="font-family:monospace;font-size:0.85em;margin-top:4px;word-break:break-all;">${rec.data.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`;
+          });
+          html += '</div>';
+        });
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function showLoading() {
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Checking SPF, DKIM, DMARC, and MX records…</p>
+        </div>`;
+    }
+
+    async function doCheck() {
+      const input = document.getElementById('domainInput').value;
+      const domain = cleanDomain(input);
+      if (!domain || !domain.includes('.')) {
+        showError('Please enter a valid domain name (e.g., example.com)');
+        return;
+      }
+
+      showError('');
+      showLoading();
+      document.getElementById('checkBtn').disabled = true;
+      document.getElementById('infoSection').style.display = 'block';
+
+      const start = performance.now();
+      try {
+        const [spf, dmarc, mx] = await Promise.all([
+          queryDNS(domain, 'TXT'),
+          queryDNS(`_dmarc.${domain}`, 'TXT'),
+          queryDNS(domain, 'MX')
+        ]);
+
+        const spfRecords = spf.filter(r => r.data.includes('v=spf1'));
+        const dmarcRecords = dmarc.filter(r => r.data.includes('v=DMARC1'));
+
+        // DKIM: check multiple selectors
+        const dkimResults = await Promise.all(
+          DKIM_SELECTORS.map(async sel => {
+            try {
+              const recs = await queryDNS(`${sel}._domainkey.${domain}`, 'TXT');
+              return { selector: sel, records: recs };
+            } catch { return { selector: sel, records: [] }; }
+          })
+        );
+
+        const timeMs = Math.round(performance.now() - start);
+
+        let html = '';
+        html += renderRecord('SPF (Sender Policy Framework)', spfRecords,
+          !spfRecords.length ? '<p style="padding:8px 16px;font-size:0.9em;color:var(--text-secondary, #666);">SPF prevents email spoofing by listing authorized mail servers. Without SPF, your domain is vulnerable to email forgery.</p>' : '');
+        html += renderDKIM(domain, dkimResults);
+        html += renderRecord('DMARC (Domain-based Message Authentication)', dmarcRecords,
+          !dmarcRecords.length ? '<p style="padding:8px 16px;font-size:0.9em;color:var(--text-secondary, #666);">DMARC tells receiving servers how to handle emails that fail SPF/DKIM checks. Essential for preventing phishing and spoofing.</p>' : '');
+        html += renderRecord('MX (Mail Exchange)', mx,
+          !mx.length ? '<p style="padding:8px 16px;font-size:0.9em;color:var(--text-secondary, #666);">MX records route incoming email. Without MX, the domain cannot receive email.</p>' : '');
+
+        html += `<div style="text-align:center;padding:8px;font-size:0.85em;color:var(--text-secondary, #666);">Queried in ${timeMs}ms via Google DNS-over-HTTPS</div>`;
+
+        document.getElementById('resultContainer').innerHTML = html;
+      } catch (err) {
+        showError(`Failed to check DNS: ${err.message}`);
+        document.getElementById('resultContainer').innerHTML = '<div class="empty-state"><p>DNS query failed. Please try again.</p></div>';
+      } finally {
+        document.getElementById('checkBtn').disabled = false;
+      }
+    }
+
+    document.getElementById('domainInput').focus();
+  </script>
+</body>
+</html>

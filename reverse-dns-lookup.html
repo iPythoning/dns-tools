@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free Reverse DNS (PTR) lookup tool — find the hostname associated with an IP address. Uses Google DNS-over-HTTPS. Supports IPv4 and IPv6.">
+  <title>Reverse DNS Lookup — Free PTR Record Lookup Tool</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/reverse-dns-lookup.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Reverse DNS Lookup",
+    "url": "https://ipythoning.github.io/dns-tools/reverse-dns-lookup.html",
+    "description": "Perform reverse DNS (PTR) lookups for any IPv4 or IPv6 address. Find the hostname associated with an IP. Uses Google DNS-over-HTTPS.",
+    "applicationCategory": "DeveloperApplication",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>Reverse DNS Lookup</h1>
+      <p>Find the hostname associated with an IP address (PTR record lookup). Supports both IPv4 and IPv6.</p>
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="ipInput" placeholder="8.8.8.8 or 2001:4860:4860::8888" autofocus autocomplete="off" autocapitalize="none" spellcheck="false">
+      <button id="lookupBtn">Lookup</button>
+    </div>
+
+    <div id="errorContainer"></div>
+    <div id="resultContainer">
+      <div class="empty-state">
+        <p>Enter an IP address and click Lookup to find its reverse DNS hostname</p>
+      </div>
+    </div>
+
+    <section class="info-section" id="infoSection" style="display:none;">
+      <h2>What is Reverse DNS?</h2>
+      <p>Reverse DNS (rDNS) is the process of resolving an IP address back to a domain name. It's the opposite of a forward DNS lookup (domain → IP). Reverse DNS uses PTR (Pointer) records stored in the <code>.arpa</code> domain.</p>
+      <h3>Common Uses</h3>
+      <ul>
+        <li><strong>Email deliverability:</strong> Many mail servers reject emails from IPs without valid rDNS</li>
+        <li><strong>Network troubleshooting:</strong> Identify which server or service an IP belongs to</li>
+        <li><strong>Security analysis:</strong> Verify if an IP matches its claimed hostname</li>
+        <li><strong>Access logs:</strong> Convert IP addresses in server logs to readable hostnames</li>
+      </ul>
+      <h3>How It Works</h3>
+      <p>When you enter an IP like <code>8.8.8.8</code>, the tool reverses the octets (<code>8.8.8.8.in-addr.arpa</code>) and queries for a PTR record. For IPv6, the address is expanded and each nibble is reversed under <code>.ip6.arpa</code>.</p>
+      <p>Not all IP addresses have PTR records — rDNS must be configured by the IP owner (usually the ISP or hosting provider).</p>
+    </section>
+  </main>
+
+  <script>
+    const GOOGLE_DOH = 'https://dns.google/resolve';
+
+    document.getElementById('ipInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doLookup();
+    });
+    document.getElementById('lookupBtn').addEventListener('click', doLookup);
+
+    function reverseIPv4(ip) {
+      return ip.split('.').reverse().join('.') + '.in-addr.arpa';
+    }
+
+    function reverseIPv6(ip) {
+      const expanded = ip.split(':').map(g => g.padStart(4, '0')).join('');
+      return expanded.split('').reverse().join('.') + '.ip6.arpa';
+    }
+
+    function showError(msg) {
+      document.getElementById('errorContainer').innerHTML = msg ? `<div class="error-msg">${msg}</div>` : '';
+    }
+
+    function showLoading() {
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Looking up PTR record…</p>
+        </div>`;
+    }
+
+    function showResult(ip, hostnames, timeMs) {
+      document.getElementById('infoSection').style.display = 'block';
+
+      if (!hostnames || hostnames.length === 0) {
+        document.getElementById('resultContainer').innerHTML = `
+          <div class="result-card">
+            <div class="result-header">
+              <h3>${ip}</h3>
+              <span class="result-time">${timeMs}ms</span>
+            </div>
+            <div class="empty-state">
+              <p>No PTR record found for ${ip}</p>
+              <p style="margin-top:8px;font-size:0.9em;color:var(--text-secondary, #666);">This IP does not have reverse DNS configured. Most residential and many cloud IPs lack PTR records.</p>
+            </div>
+          </div>`;
+        return;
+      }
+
+      const rows = hostnames.map(h => `<tr><td>PTR</td><td>—</td><td>${h}</td></tr>`).join('');
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <h3>${ip} → ${hostnames[0]}</h3>
+            <span class="result-time">${timeMs}ms</span>
+          </div>
+          <table class="result-table">
+            <thead><tr><th>Type</th><th>TTL</th><th>Hostname</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    async function doLookup() {
+      const ip = document.getElementById('ipInput').value.trim();
+      if (!ip) {
+        showError('Please enter an IP address');
+        return;
+      }
+
+      showError('');
+      showLoading();
+      document.getElementById('lookupBtn').disabled = true;
+
+      const start = performance.now();
+      try {
+        let name;
+        if (ip.includes(':')) {
+          name = reverseIPv6(ip);
+        } else if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(ip)) {
+          name = reverseIPv4(ip);
+        } else {
+          showError('Please enter a valid IPv4 or IPv6 address');
+          document.getElementById('lookupBtn').disabled = false;
+          return;
+        }
+
+        const url = `${GOOGLE_DOH}?name=${encodeURIComponent(name)}&type=PTR`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`DNS query failed: HTTP ${res.status}`);
+        const data = await res.json();
+        const timeMs = Math.round(performance.now() - start);
+
+        const hostnames = (data.Answer || [])
+          .filter(r => r.type === 12)
+          .map(r => r.data.replace(/\.$/, ''));
+
+        showResult(ip, hostnames, timeMs);
+      } catch (err) {
+        const timeMs = Math.round(performance.now() - start);
+        showError(`Failed to query reverse DNS: ${err.message}`);
+        showResult(ip, [], timeMs);
+      } finally {
+        document.getElementById('lookupBtn').disabled = false;
+      }
+    }
+
+    document.getElementById('ipInput').focus();
+  </script>
+</body>
+</html>
