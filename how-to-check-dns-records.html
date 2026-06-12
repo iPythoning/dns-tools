@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Learn how to check DNS records using command-line tools (dig, nslookup), online DNS checkers, and browser tools. Step-by-step guide for A, MX, TXT, CNAME, and more.">
+  <title>How to Check DNS Records — dig, nslookup & Online Tools Guide</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/how-to-check-dns-records.html">
+  <meta property="og:title" content="How to Check DNS Records — dig, nslookup & Online Tools Guide">
+  <meta property="og:description" content="Step-by-step guide to checking DNS records using command-line tools, online checkers, and browser DevTools. Covers A, MX, TXT, CNAME, NS, and more.">
+  <meta property="og:url" content="https://ipythoning.github.io/dns-tools/how-to-check-dns-records.html">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "How to Check DNS Records — dig, nslookup & Online Tools Guide",
+    "description": "Step-by-step guide covering three ways to check DNS records: command-line tools (dig, nslookup), online DNS checkers, and browser DevTools. Includes examples for A, MX, TXT, CNAME, and NS records.",
+    "author": { "@type": "Person", "name": "iPythoning", "url": "https://github.com/iPythoning" },
+    "datePublished": "2026-06-12",
+    "dateModified": "2026-06-12",
+    "mainEntityOfPage": "https://ipythoning.github.io/dns-tools/how-to-check-dns-records.html",
+    "publisher": { "@type": "Person", "name": "iPythoning" }
+  }
+  </script>
+  <style>
+    .article { max-width: 720px; }
+
+    .article-intro {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 32px;
+    }
+
+    .article h2 {
+      font-size: 1.4rem;
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .article h3 {
+      font-size: 1.1rem;
+      margin: 28px 0 12px;
+      color: var(--accent);
+    }
+
+    .article p, .article li {
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .article ul, .article ol {
+      padding-left: 24px;
+      margin-bottom: 20px;
+    }
+
+    .article code {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+    }
+
+    .article pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    .article pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      line-height: 1.6;
+    }
+
+    .method-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .method-card h3 {
+      margin-top: 0;
+      color: var(--accent);
+    }
+
+    .tool-cta {
+      background: linear-gradient(135deg, var(--accent-dim), #1a5fb4);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+
+    .tool-cta p { color: #fff; margin-bottom: 8px; }
+
+    .tool-cta a {
+      color: #fff;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .record-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .record-table th, .record-table td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .record-table th {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .record-table code {
+      white-space: nowrap;
+    }
+
+    .faq-item {
+      margin-bottom: 24px;
+    }
+
+    .faq-item h3 { margin-bottom: 8px; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>How to Check DNS Records</h1>
+      <p>A complete guide to looking up DNS records — using command-line tools, online checkers, and browser DevTools.</p>
+    </div>
+
+    <article class="article">
+      <p class="article-intro">
+        Checking DNS records is one of the most common tasks in web development and system administration. Whether you're troubleshooting a website that won't load, verifying email configuration, or auditing domain security, knowing how to query DNS is an essential skill. This guide covers <strong>three ways to check DNS records</strong> — from the command line, through online tools, and from your browser — with real examples for every common record type.
+      </p>
+
+      <h2>What Are DNS Records?</h2>
+      <p>
+        DNS (Domain Name System) records are instructions stored on authoritative nameservers that tell the internet how to handle your domain. Each record type serves a different purpose — pointing your domain to a server, routing email, verifying ownership, or enforcing security policies. If you're new to DNS, start with our <a href="what-is-dns.html">What is DNS? guide</a> for an overview of how the system works.
+      </p>
+
+      <div class="tool-cta">
+        <p><strong>🔍 Quick way to check DNS records:</strong> Use our free <a href="dns-lookup.html">DNS Record Lookup</a> tool — queries A, AAAA, MX, TXT, CNAME, NS, and SOA records for any domain instantly.</p>
+      </div>
+
+      <h2>Method 1: Command Line (dig &amp; nslookup)</h2>
+      <p>
+        The command line gives you the most control and detail when querying DNS. Two standard tools come pre-installed on macOS and Linux: <code>dig</code> (Domain Information Groper) and <code>nslookup</code> (Name Server Lookup). Windows users can install <code>dig</code> via WSL or use <code>nslookup</code> which comes built-in.
+      </p>
+
+      <div class="method-card">
+        <h3>Using dig</h3>
+        <p><code>dig</code> is the gold standard for DNS queries. It provides detailed, machine-readable output including the query time, the responding server, and full record data.</p>
+
+        <p><strong>Check A records (IPv4 address):</strong></p>
+        <pre><code>dig example.com A
+
+# Short output only
+dig example.com A +short</code></pre>
+
+        <p><strong>Check MX records (mail servers):</strong></p>
+        <pre><code>dig example.com MX
+
+# With priority values
+dig example.com MX +short</code></pre>
+
+        <p><strong>Check TXT records (SPF, DKIM, verification):</strong></p>
+        <pre><code>dig example.com TXT</code></pre>
+
+        <p><strong>Check CNAME records (aliases):</strong></p>
+        <pre><code>dig www.example.com CNAME</code></pre>
+
+        <p><strong>Check NS records (nameservers):</strong></p>
+        <pre><code>dig example.com NS
+
+# Query a specific nameserver
+dig example.com @8.8.8.8</code></pre>
+
+        <p><strong>Check AAAA records (IPv6 address):</strong></p>
+        <pre><code>dig example.com AAAA</code></pre>
+
+        <p><strong>Trace DNS delegation path:</strong></p>
+        <pre><code>dig example.com +trace</code></pre>
+      </div>
+
+      <div class="method-card">
+        <h3>Using nslookup</h3>
+        <p><code>nslookup</code> is simpler and available on all platforms including Windows. It's less feature-rich than <code>dig</code> but gets the job done for quick lookups.</p>
+
+        <p><strong>Check A records:</strong></p>
+        <pre><code>nslookup example.com
+
+# Query specific DNS server
+nslookup example.com 8.8.8.8</code></pre>
+
+        <p><strong>Check MX records:</strong></p>
+        <pre><code>nslookup -type=MX example.com</code></pre>
+
+        <p><strong>Check TXT records:</strong></p>
+        <pre><code>nslookup -type=TXT example.com</code></pre>
+
+        <p><strong>Check NS records:</strong></p>
+        <pre><code>nslookup -type=NS example.com</code></pre>
+      </div>
+
+      <h2>Method 2: Online DNS Checker Tools</h2>
+      <p>
+        Online DNS tools are the fastest option — no terminal needed, works from any device, and often provides additional context like propagation checks and historical data. They're especially useful when you're on a mobile device, working on a machine where you can't install tools, or need to share results with non-technical team members.
+      </p>
+
+      <div class="method-card">
+        <h3>Using a Web-Based DNS Lookup</h3>
+        <p>Our <a href="dns-lookup.html">DNS Record Lookup</a> checks all common record types in one query:</p>
+        <ol>
+          <li>Enter a domain name (e.g., <code>github.com</code>)</li>
+          <li>Click "Lookup" — results appear instantly</li>
+          <li>View A, AAAA, MX, TXT, CNAME, NS, and SOA records</li>
+          <li>Copy results or share the link with your team</li>
+        </ol>
+        <p><strong>Why use an online tool:</strong> no installation, works on phones/tablets, aggregates multiple record types in one view, and provides a shareable result. Plus, you can cross-reference with our <a href="whois.html">WHOIS Lookup</a> to see registration details alongside DNS records.</p>
+      </div>
+
+      <h2>Method 3: Browser Developer Tools</h2>
+      <p>
+        Modern browsers can inspect DNS resolution through their DevTools. This method is useful for debugging how a specific page loads and whether DNS is contributing to slow performance.
+      </p>
+
+      <div class="method-card">
+        <h3>Chrome/Edge DevTools</h3>
+        <ol>
+          <li>Open DevTools (<code>F12</code> or <code>Cmd+Option+I</code>)</li>
+          <li>Go to the <strong>Network</strong> tab</li>
+          <li>Reload the page</li>
+          <li>Click any request → <strong>Timing</strong> tab</li>
+          <li>Look for "DNS Lookup" in the timing breakdown</li>
+        </ol>
+        <p>This shows how long DNS resolution took but doesn't reveal the actual record values. For that, use the Security tab → "View certificate" to see which domains are covered by the SSL certificate (which must match DNS records).</p>
+      </div>
+
+      <div class="method-card">
+        <h3>Firefox Developer Tools</h3>
+        <ol>
+          <li>Open DevTools (<code>F12</code>)</li>
+          <li>Go to the <strong>Network</strong> tab</li>
+          <li>Reload and click a request</li>
+          <li>Check the <strong>Timings</strong> section for DNS resolution time</li>
+        </ol>
+      </div>
+
+      <h2>DNS Record Types Reference</h2>
+      <p>Here's what each common DNS record type means and when you'd check it:</p>
+
+      <table class="record-table">
+        <thead>
+          <tr>
+            <th>Record</th>
+            <th>Purpose</th>
+            <th>When to Check</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>A</code></td>
+            <td>Maps domain to IPv4 address</td>
+            <td>Website not loading; verifying server IP</td>
+          </tr>
+          <tr>
+            <td><code>AAAA</code></td>
+            <td>Maps domain to IPv6 address</td>
+            <td>IPv6 connectivity issues</td>
+          </tr>
+          <tr>
+            <td><code>CNAME</code></td>
+            <td>Alias one domain to another</td>
+            <td>CDN setup (www → CDN hostname)</td>
+          </tr>
+          <tr>
+            <td><code>MX</code></td>
+            <td>Mail server routing</td>
+            <td>Email delivery problems</td>
+          </tr>
+          <tr>
+            <td><code>TXT</code></td>
+            <td>Arbitrary text; SPF, DKIM, verification</td>
+            <td>Email authentication; domain ownership verification</td>
+          </tr>
+          <tr>
+            <td><code>NS</code></td>
+            <td>Authoritative nameservers</td>
+            <td>Domain delegation; DNS provider migration</td>
+          </tr>
+          <tr>
+            <td><code>SOA</code></td>
+            <td>Start of Authority — zone metadata</td>
+            <td>DNS propagation timing; zone serial check</td>
+          </tr>
+          <tr>
+            <td><code>PTR</code></td>
+            <td>Reverse DNS — IP to hostname</td>
+            <td>Email deliverability (reverse DNS for mail servers)</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Common DNS Checking Scenarios</h2>
+
+      <h3>🔧 Troubleshooting "Site Not Loading"</h3>
+      <ol>
+        <li>Check A records with <code>dig example.com A +short</code> — confirms DNS resolves to an IP</li>
+        <li>If no A record, check NS records — confirms domain has nameservers configured</li>
+        <li>Use our <a href="ssl-checker.html">SSL Certificate Checker</a> — a valid certificate requires correct DNS</li>
+        <li>Check with multiple DNS servers (<code>@8.8.8.8</code>, <code>@1.1.1.1</code>) to rule out local resolver issues</li>
+      </ol>
+
+      <h3>📧 Debugging Email Delivery Issues</h3>
+      <ol>
+        <li>Check MX records — <code>dig example.com MX</code></li>
+        <li>Check SPF record — <code>dig example.com TXT | grep spf</code></li>
+        <li>Check DKIM record — <code>dig selector._domainkey.example.com TXT</code></li>
+        <li>Verify DMARC policy — <code>dig _dmarc.example.com TXT</code></li>
+      </ol>
+
+      <h3>🔒 Verifying Domain Ownership</h3>
+      <ol>
+        <li>Google Search Console, GitHub, and many services verify ownership via TXT records</li>
+        <li>Check your TXT records to confirm verification values are live — <code>dig example.com TXT</code></li>
+        <li>Remember DNS changes can take up to 48 hours to propagate (though typically 5–30 minutes)</li>
+      </ol>
+
+      <div class="tool-cta">
+        <p><strong>🛠 Need to check your domain right now?</strong> Use our <a href="dns-lookup.html">DNS Record Lookup</a> — free, instant, no signup required. Also try our <a href="whois.html">WHOIS Lookup</a> to see domain registration details and our <a href="ssl-checker.html">SSL Checker</a> to verify your certificate.</p>
+      </div>
+
+      <h2>FAQ</h2>
+
+      <div class="faq-item">
+        <h3>How long does it take for DNS changes to propagate?</h3>
+        <p>DNS propagation typically takes 5–30 minutes for most providers, but can take up to 48 hours in worst cases. The TTL (Time To Live) value on your records determines how long resolvers cache old values. Check the SOA record's <code>refresh</code> and <code>minimum</code> TTL fields to estimate propagation time. Use our <a href="dns-lookup.html">DNS Record Lookup</a> to verify your changes are live by querying against Google's public DNS (8.8.8.8).</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>What's the difference between dig and nslookup?</h3>
+        <p><code>dig</code> provides more detailed output, better scripting support, and consistent behavior across platforms. <code>nslookup</code> is simpler but may use different resolvers depending on the OS. For troubleshooting, prefer <code>dig</code>. For quick one-off checks on Windows where <code>dig</code> isn't installed, <code>nslookup</code> works fine.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Can I check DNS records for any domain?</h3>
+        <p>Yes — DNS records are public by design. Anyone can query A, MX, TXT, NS, CNAME, and other records for any domain. Use our free <a href="dns-lookup.html">DNS Record Lookup</a> tool to check any domain instantly.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Why do my DNS records show different results on different tools?</h3>
+        <p>This usually happens during DNS propagation — when you've recently changed records and some DNS servers still have cached old values. It can also happen if your domain uses geo-routed DNS (different IPs for different regions). Query multiple public resolvers (Google 8.8.8.8, Cloudflare 1.1.1.1) to compare.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How do I check who owns a domain?</h3>
+        <p>DNS records tell you how a domain is configured, but not who owns it. For ownership information, use a <a href="whois.html">WHOIS Lookup</a> to see the registrar, registration date, expiration date, and (if not privacy-protected) the registrant's contact details.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How do I check if my SSL certificate is valid?</h3>
+        <p>SSL certificates are separate from DNS records but depend on correct DNS configuration. Use our <a href="ssl-checker.html">SSL Certificate Checker</a> to verify certificate validity, issuer, expiry date, and SAN coverage.</p>
+      </div>
+    </article>
+  </main>
+  <footer>
+    <div class="container">
+      <p>Built by <a href="https://github.com/iPythoning">iPythoning</a>. Data via Google DNS, Cloudflare, RDAP.</p>
+      <nav>
+        <a href="index.html">Home</a> · <a href="what-is-dns.html">What is DNS?</a> · <a href="https://github.com/iPythoning/dns-tools">GitHub</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
