@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free DNS Speed Test — compare the response times of Cloudflare, Google, Quad9, OpenDNS, and other popular DNS resolvers. Find the fastest DNS for your location.">
+  <title>DNS Speed Test — Compare DNS Resolver Performance</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/dns-speed-test.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "DNS Speed Test",
+    "url": "https://ipythoning.github.io/dns-tools/dns-speed-test.html",
+    "description": "Benchmark and compare the response times of popular DNS resolvers including Cloudflare, Google Public DNS, Quad9, OpenDNS, and more. Find the fastest DNS for your network.",
+    "applicationCategory": "DeveloperApplication",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+  <style>
+    .benchmark-controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 24px; }
+    .speed-bar-container { display: flex; align-items: center; gap: 12px; margin: 6px 0; }
+    .speed-label { width: 140px; font-size: 0.9em; font-weight: 600; text-align: right; flex-shrink: 0; }
+    .speed-bar-track { flex: 1; height: 28px; background: var(--surface, #f0f0f0); border-radius: 6px; position: relative; overflow: hidden; }
+    .speed-bar-fill { height: 100%; border-radius: 6px; transition: width 0.5s var(--ease-out, ease-out); display: flex; align-items: center; padding-left: 10px; font-size: 0.8em; font-weight: 700; color: #fff; min-width: 60px; }
+    .speed-bar-val { width: 80px; font-size: 0.85em; font-weight: 600; text-align: left; flex-shrink: 0; }
+    .speed-bar-val small { font-weight: 400; color: var(--text-secondary, #888); }
+    .fastest-badge { display: inline-block; background: #22c55e; color: #fff; padding: 1px 8px; border-radius: 10px; font-size: 0.75em; margin-left: 6px; }
+    .speed-chart { margin: 20px 0; }
+    .speed-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .speed-summary-card { background: var(--surface, #fafafa); border: 1px solid var(--border, #e5e5e5); border-radius: 10px; padding: 16px; text-align: center; }
+    .speed-summary-card .label { font-size: 0.8em; color: var(--text-secondary, #888); margin-bottom: 4px; }
+    .speed-summary-card .value { font-size: 1.6em; font-weight: 700; }
+    .speed-summary-card .sub { font-size: 0.8em; color: var(--text-secondary, #888); }
+    .running-indicator { display: none; }
+    .running-indicator.active { display: flex; align-items: center; gap: 10px; margin: 16px 0; padding: 12px 16px; background: var(--surface, #fafafa); border: 1px solid var(--border, #e5e5e5); border-radius: 8px; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .running-indicator.active .pulse-dot { width: 10px; height: 10px; background: #3b82f6; border-radius: 50%; animation: pulse 1s infinite; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>DNS Speed Test</h1>
+      <p>Compare the response times of popular DNS resolvers. Find the fastest DNS for your location.</p>
+    </div>
+
+    <div class="benchmark-controls">
+      <button id="runBtn" class="primary-btn">Run Speed Test</button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:0.85em;">
+        Probes: <select id="probeCount" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border,#d0d0d0);">
+          <option value="5">5</option>
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+        </select>
+      </label>
+    </div>
+
+    <div id="runningIndicator" class="running-indicator">
+      <div class="pulse-dot"></div>
+      <span>Running benchmark… <span id="progressText"></span></span>
+    </div>
+
+    <div id="summaryContainer" style="display:none;">
+      <div class="speed-summary" id="summaryCards"></div>
+      <div class="speed-chart" id="speedChart"></div>
+    </div>
+
+    <div id="resultContainer">
+      <div class="empty-state"><p>Click "Run Speed Test" to benchmark DNS resolvers from your browser.</p></div>
+    </div>
+
+    <section class="info-section">
+      <h2>How DNS Speed Affects Your Browsing</h2>
+      <p>Every time you visit a website, your computer performs a DNS lookup to translate the domain name into an IP address. A slow DNS resolver adds latency to every new connection. Switching to a faster DNS can noticeably improve your browsing experience.</p>
+      <h3>DNS Resolvers Tested</h3>
+      <ul>
+        <li><strong>Cloudflare (1.1.1.1)</strong> — Privacy-focused, often the fastest globally</li>
+        <li><strong>Google (8.8.8.8)</strong> — The most popular public DNS, global anycast network</li>
+        <li><strong>Quad9 (9.9.9.9)</strong> — Security-focused, blocks known malicious domains</li>
+        <li><strong>OpenDNS (208.67.222.222)</strong> — Cisco-owned, with phishing protection and content filtering</li>
+        <li><strong>Comodo (8.26.56.26)</strong> — Security-focused with malware domain blocking</li>
+        <li><strong>Verisign (64.6.64.6)</strong> — Operates two root DNS servers, high reliability</li>
+        <li><strong>AdGuard (94.140.14.14)</strong> — Blocks ads and trackers at DNS level</li>
+      </ul>
+      <h3>How the Test Works</h3>
+      <p>This tool sends DNS-over-HTTPS (DoH) queries from your browser to each resolver's API endpoint. For each resolver, it performs multiple lookups against different domain names and measures the round-trip time. The results reflect the latency <em>from your network</em> to each DNS resolver — your results will differ from someone in another country.</p>
+    </section>
+  </main>
+
+  <script>
+    const RESOLVERS = [
+      { name: 'Cloudflare', color: '#f38020', url: 'https://cloudflare-dns.com/dns-query' },
+      { name: 'Google', color: '#4285f4', url: 'https://dns.google/resolve' },
+      { name: 'Quad9', color: '#6b46c1', url: 'https://dns.quad9.net/dns-query' },
+      { name: 'OpenDNS', color: '#0891b2', url: 'https://doh.opendns.com/dns-query' },
+      { name: 'AdGuard', color: '#67b279', url: 'https://dns.adguard-dns.com/dns-query' },
+      { name: 'Comodo', color: '#dc2626', url: 'https://doh.comodo.com/dns-query' },
+      { name: 'Verisign', color: '#7c3aed', url: 'https://doh.verisign.com/dns-query' },
+    ];
+
+    const DOMAINS = [
+      'google.com', 'github.com', 'cloudflare.com', 'amazon.com', 'wikipedia.org',
+      'youtube.com', 'microsoft.com', 'reddit.com', 'netflix.com', 'stackoverflow.com',
+      'apple.com', 'facebook.com', 'twitter.com', 'linkedin.com', 'adobe.com',
+      'spotify.com', 'dropbox.com', 'slack.com', 'discord.com', 'zoom.us'
+    ];
+
+    async function benchmarkResolver(resolver, probeCount) {
+      const times = [];
+      const testDomains = DOMAINS.slice(0, probeCount);
+
+      for (const domain of testDomains) {
+        const start = performance.now();
+        try {
+          const res = await fetch(`${resolver.url}?name=${domain}&type=A`, {
+            signal: AbortSignal.timeout(3000)
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          await res.json();
+          times.push(performance.now() - start);
+        } catch {
+          times.push(null);
+        }
+      }
+
+      const valid = times.filter(t => t !== null);
+      valid.sort((a, b) => a - b);
+
+      return {
+        name: resolver.name,
+        color: resolver.color,
+        min: valid.length ? Math.round(valid[0]) : null,
+        max: valid.length ? Math.round(valid[valid.length - 1]) : null,
+        avg: valid.length ? Math.round(valid.reduce((s, v) => s + v, 0) / valid.length) : null,
+        p90: valid.length ? Math.round(valid[Math.floor(valid.length * 0.9)]) : null,
+        success: valid.length,
+        total: probeCount
+      };
+    }
+
+    document.getElementById('runBtn').addEventListener('click', runBenchmark);
+
+    async function runBenchmark() {
+      const probeCount = parseInt(document.getElementById('probeCount').value);
+      const btn = document.getElementById('runBtn');
+      const indicator = document.getElementById('runningIndicator');
+      const progress = document.getElementById('progressText');
+      const summary = document.getElementById('summaryContainer');
+
+      btn.disabled = true;
+      btn.textContent = 'Running…';
+      indicator.classList.add('active');
+      summary.style.display = 'none';
+
+      const results = [];
+      for (let i = 0; i < RESOLVERS.length; i++) {
+        progress.textContent = `(${i + 1}/${RESOLVERS.length}) ${RESOLVERS[i].name}…`;
+        const result = await benchmarkResolver(RESOLVERS[i], probeCount);
+        results.push(result);
+      }
+
+      indicator.classList.remove('active');
+      btn.disabled = false;
+      btn.textContent = 'Run Again';
+
+      results.sort((a, b) => (a.avg || Infinity) - (b.avg || Infinity));
+      showResults(results);
+    }
+
+    function showResults(results) {
+      const summary = document.getElementById('summaryContainer');
+      summary.style.display = 'block';
+      document.getElementById('resultContainer').style.display = 'none';
+
+      const fastest = results[0];
+      document.getElementById('summaryCards').innerHTML = `
+        <div class="speed-summary-card">
+          <div class="label">Fastest DNS</div>
+          <div class="value">${fastest.name}</div>
+          <div class="sub">${fastest.avg}ms avg</div>
+        </div>
+        <div class="speed-summary-card">
+          <div class="label">Slowest DNS</div>
+          <div class="value">${results[results.length - 1].name}</div>
+          <div class="sub">${results[results.length - 1].avg}ms avg</div>
+        </div>
+        <div class="speed-summary-card">
+          <div class="label">Speed Difference</div>
+          <div class="value">${Math.round((results[results.length - 1].avg || 0) / (fastest.avg || 1) * 100) / 100}x</div>
+          <div class="sub">slowest / fastest ratio</div>
+        </div>
+      `;
+
+      const maxAvg = Math.max(...results.map(r => r.avg || 0));
+      const bars = results.map((r, i) => {
+        const width = maxAvg > 0 ? Math.max(8, (r.avg || 0) / maxAvg * 100) : 0;
+        const badge = i === 0 ? '<span class="fastest-badge">FASTEST</span>' : '';
+        return `
+          <div class="speed-bar-container">
+            <div class="speed-label">${r.name}${badge}</div>
+            <div class="speed-bar-track">
+              <div class="speed-bar-fill" style="width:${width}%;background:${r.color};"></div>
+            </div>
+            <div class="speed-bar-val">${r.avg}ms <small>avg</small></div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('speedChart').innerHTML = `
+        <h3 style="margin-bottom:12px;">Response Time Comparison (Average)</h3>
+        ${bars}
+        <p style="margin-top:12px;font-size:0.8em;color:var(--text-secondary,#888);">${results[0].total} probes per resolver. Results from your browser location.</p>
+      `;
+    }
+  </script>
+</body>
+</html>
