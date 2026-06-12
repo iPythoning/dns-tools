@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Complete guide to DNS record types: A, AAAA, CNAME, MX, TXT, NS, SOA, PTR, SRV, CAA. Learn what each record does, when to use it, and how to check your configuration.">
+  <title>DNS Record Types Explained — A, AAAA, CNAME, MX, TXT, NS, SOA & More</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/dns-record-types.html">
+  <meta property="og:title" content="DNS Record Types Explained — A, AAAA, CNAME, MX, TXT, NS, SOA & More">
+  <meta property="og:description" content="Every DNS record type explained with real-world examples. Learn what A, AAAA, CNAME, MX, TXT, NS, SOA, PTR, SRV, and CAA records do and when to use them.">
+  <meta property="og:url" content="https://ipythoning.github.io/dns-tools/dns-record-types.html">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "DNS Record Types Explained — A, AAAA, CNAME, MX, TXT, NS, SOA & More",
+    "description": "Complete reference guide to every common DNS record type: A (IPv4 address), AAAA (IPv6), CNAME (alias), MX (mail), TXT (SPF/DKIM/verification), NS (nameserver), SOA (zone authority), PTR (reverse), SRV (service), and CAA (certificate authority). With real examples and lookup instructions.",
+    "author": { "@type": "Person", "name": "iPythoning", "url": "https://github.com/iPythoning" },
+    "datePublished": "2026-06-12",
+    "dateModified": "2026-06-12",
+    "mainEntityOfPage": "https://ipythoning.github.io/dns-tools/dns-record-types.html",
+    "publisher": { "@type": "Person", "name": "iPythoning" }
+  }
+  </script>
+  <style>
+    .article { max-width: 720px; }
+
+    .article-intro {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 32px;
+    }
+
+    .article h2 {
+      font-size: 1.4rem;
+      margin: 40px 0 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .article h3 {
+      font-size: 1.1rem;
+      margin: 28px 0 12px;
+      color: var(--accent);
+    }
+
+    .article p, .article li {
+      line-height: 1.8;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .article ul, .article ol {
+      padding-left: 24px;
+      margin-bottom: 20px;
+    }
+
+    .article code {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+    }
+
+    .article pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    .article pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      line-height: 1.6;
+    }
+
+    .record-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .record-card h3 {
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .record-card h3 code {
+      font-size: 1.3rem;
+      background: var(--accent-dim);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 4px;
+      border: none;
+    }
+
+    .tool-cta {
+      background: linear-gradient(135deg, var(--accent-dim), #1a5fb4);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin: 24px 0;
+    }
+
+    .tool-cta p { color: #fff; margin-bottom: 8px; }
+
+    .tool-cta a {
+      color: #fff;
+      font-weight: 600;
+      text-decoration: underline;
+    }
+
+    .record-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+
+    .record-table th, .record-table td {
+      text-align: left;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .record-table th {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .record-table code { white-space: nowrap; }
+
+    .faq-item { margin-bottom: 24px; }
+    .faq-item h3 { margin-bottom: 8px; }
+
+    .nav-top { margin-bottom: 24px; }
+    .nav-top a { color: var(--accent); text-decoration: none; }
+    .nav-top a:hover { text-decoration: underline; }
+
+    .priority-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      margin-left: 8px;
+    }
+
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 32px;
+    }
+
+    .toc h3 { margin-top: 0; font-size: 0.95rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .toc ol { margin-bottom: 0; padding-left: 20px; }
+    .toc li { margin-bottom: 6px; font-size: 0.95rem; }
+    .toc a { color: var(--accent); text-decoration: none; }
+    .toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>DNS Record Types Explained</h1>
+      <p>A complete reference to every common DNS record type — what they do, what they look like, and when to use them.</p>
+    </div>
+
+    <article class="article">
+      <p class="article-intro">
+        DNS records are the building blocks of the Domain Name System. Each record type serves a specific purpose — directing traffic to servers, routing email, verifying domain ownership, or enforcing security policies. Whether you're configuring a new domain, debugging delivery issues, or studying for a certification, understanding record types is essential. This guide covers <strong>10 DNS record types</strong> with real examples, configuration tips, and links to quickly check your own domain.
+      </p>
+
+      <nav class="toc">
+        <h3>On this page</h3>
+        <ol>
+          <li><a href="#a-record">A Record — IPv4 Address</a></li>
+          <li><a href="#aaaa-record">AAAA Record — IPv6 Address</a></li>
+          <li><a href="#cname-record">CNAME Record — Canonical Name</a></li>
+          <li><a href="#mx-record">MX Record — Mail Exchanger</a></li>
+          <li><a href="#txt-record">TXT Record — Text Data</a></li>
+          <li><a href="#ns-record">NS Record — Nameserver</a></li>
+          <li><a href="#soa-record">SOA Record — Start of Authority</a></li>
+          <li><a href="#ptr-record">PTR Record — Reverse DNS</a></li>
+          <li><a href="#srv-record">SRV Record — Service Locator</a></li>
+          <li><a href="#caa-record">CAA Record — Certificate Authority Authorization</a></li>
+          <li><a href="#quick-ref">Quick Reference Table</a></li>
+          <li><a href="#faq">FAQ</a></li>
+        </ol>
+      </nav>
+
+      <div class="tool-cta">
+        <p><strong>🔍 Want to check records for your domain?</strong> Use our free <a href="dns-lookup.html">DNS Record Lookup</a> tool — queries A, AAAA, MX, TXT, CNAME, NS, and SOA records instantly.</p>
+      </div>
+
+      <h2 id="a-record">1. A Record — IPv4 Address</h2>
+      <div class="record-card">
+        <h3><code>A</code> Address Record</h3>
+        <p>The <strong>A record</strong> is the most fundamental DNS record. It maps a domain name to an IPv4 address — the numeric address where your website or application actually lives. When someone types <code>example.com</code> into their browser, the A record tells the browser which server IP to connect to.</p>
+
+        <p><strong>What it looks like:</strong></p>
+        <pre><code>example.com.    300    IN    A    93.184.216.34
+www.example.com.  300   IN    A    93.184.216.34</code></pre>
+
+        <ul>
+          <li><strong>Name:</strong> the domain or subdomain (use <code>@</code> for the root domain at most registrars)</li>
+          <li><strong>TTL:</strong> time-to-live in seconds — how long resolvers cache this record (300 = 5 minutes)</li>
+          <li><strong>Value:</strong> the IPv4 address</li>
+        </ul>
+
+        <p><strong>When you need it:</strong> Every domain that serves web traffic needs at least one A record. Most setups have an A record for the root domain (<code>@</code>) and a CNAME for <code>www</code> (or a second A record pointing to the same IP).</p>
+      </div>
+
+      <h2 id="aaaa-record">2. AAAA Record — IPv6 Address</h2>
+      <div class="record-card">
+        <h3><code>AAAA</code> IPv6 Address Record</h3>
+        <p>The <strong>AAAA record</strong> (pronounced "quad-A") is the IPv6 equivalent of the A record. It maps a domain to a 128-bit IPv6 address instead of the 32-bit IPv4 address. As the world gradually exhausts the IPv4 address space, AAAA records are becoming increasingly important.</p>
+
+        <p><strong>What it looks like:</strong></p>
+        <pre><code>example.com.    300    IN    AAAA    2606:2800:220:1:248:1893:25c8:1946</code></pre>
+
+        <p><strong>Key points:</strong></p>
+        <ul>
+          <li>Modern browsers try IPv6 first, then fall back to IPv4 (Happy Eyeballs algorithm)</li>
+          <li>If you only have an A record and no AAAA, IPv6-only clients need a transition mechanism (NAT64/DNS64)</li>
+          <li>Most CDNs and cloud providers support both A and AAAA out of the box</li>
+          <li>Adding an AAAA record alongside your A record is called <strong>dual-stack</strong> networking</li>
+        </ul>
+      </div>
+
+      <h2 id="cname-record">3. CNAME Record — Canonical Name</h2>
+      <div class="record-card">
+        <h3><code>CNAME</code> Canonical Name Record</h3>
+        <p>A <strong>CNAME record</strong> creates an alias — it points one domain name to another domain name. Instead of resolving to an IP address directly, the resolver looks up the target domain's A/AAAA records. CNAMEs are widely used for CDNs, hosted platforms, and simplifying DNS management.</p>
+
+        <p><strong>What it looks like:</strong></p>
+        <pre><code>www.example.com.    300    IN    CNAME    example.com.
+blog.example.com.   300    IN    CNAME    example.github.io.</code></pre>
+
+        <ul>
+          <li><strong>Name:</strong> the alias (subdomain you want to redirect)</li>
+          <li><strong>Value:</strong> the canonical (target) domain name — must end with a dot for absolute FQDN</li>
+        </ul>
+
+        <p><strong>Important rules:</strong></p>
+        <ul>
+          <li>CNAMEs <strong>cannot coexist</strong> with other records at the same name — if <code>www.example.com</code> has a CNAME, it can't also have an A record or MX record</li>
+          <li>The <strong>root domain (apex)</strong> cannot have a CNAME (violates RFC) — use an A record with a static IP or an ALIAS/ANAME record if your provider supports it</li>
+          <li>CNAME chains (A → B → C) work but add resolution latency — keep chains short</li>
+        </ul>
+      </div>
+
+      <div class="tool-cta">
+        <p><strong>🛠 Check your CNAME chain:</strong> Use the <a href="dns-lookup.html">DNS Record Lookup</a> to trace CNAME resolution and verify aliases are configured correctly.</p>
+      </div>
+
+      <h2 id="mx-record">4. MX Record — Mail Exchanger</h2>
+      <div class="record-card">
+        <h3><code>MX</code> Mail Exchanger Record</h3>
+        <p>The <strong>MX record</strong> tells the world which servers handle incoming email for your domain. It includes a <strong>priority value</strong> — lower numbers are tried first. This is how services like Google Workspace, Microsoft 365, and ProtonMail receive mail on behalf of your domain.</p>
+
+        <p><strong>What it looks like:</strong></p>
+        <pre><code>example.com.    300    IN    MX    10    mail.example.com.
+example.com.    300    IN    MX    20    mail2.example.com.
+; Google Workspace example:
+example.com.    300    IN    MX    1     ASPMX.L.GOOGLE.COM.</code></pre>
+
+        <ul>
+          <li><strong>Priority:</strong> integer, lower = higher priority. Common values: 0 (primary only), 10/20 (primary + backup), 1/5/10 (Google Workspace default)</li>
+          <li><strong>Value:</strong> the hostname of the mail server — must resolve to an A/AAAA record (not a CNAME)</li>
+        </ul>
+
+        <p><strong>Common issues:</strong> Missing MX records mean no one can send you email. If MX points to a CNAME instead of an A record, some mail servers will reject delivery. Always verify with <a href="dns-lookup.html">DNS Lookup</a> after changing MX records.</p>
+      </div>
+
+      <h2 id="txt-record">5. TXT Record — Text Data</h2>
+      <div class="record-card">
+        <h3><code>TXT</code> Text Record</h3>
+        <p><strong>TXT records</strong> store arbitrary text data associated with a domain. They're the Swiss Army knife of DNS — used for email authentication (SPF, DKIM, DMARC), domain ownership verification, and security policies.</p>
+
+        <p><strong>What they look like:</strong></p>
+        <pre><code>; SPF — authorize mail servers
+example.com.    300    IN    TXT    "v=spf1 include:_spf.google.com ~all"
+
+; DKIM — email signing key
+google._domainkey.example.com.  300  IN  TXT  "v=DKIM1; k=rsa; p=MIGfMA0G..."
+
+; DMARC — email authentication policy
+_dmarc.example.com.  300  IN  TXT  "v=DMARC1; p=quarantine; rua=mailto:dmarc@example.com"
+
+; Domain verification (Google, GitHub, Stripe, etc.)
+example.com.    300    IN    TXT    "google-site-verification=abc123..."</code></pre>
+
+        <p><strong>Major use cases:</strong></p>
+        <ul>
+          <li><strong>SPF (Sender Policy Framework):</strong> lists servers authorized to send mail from your domain — critical for email deliverability</li>
+          <li><strong>DKIM (DomainKeys Identified Mail):</strong> cryptographic signature that proves email wasn't tampered with</li>
+          <li><strong>DMARC:</strong> tells receivers what to do with mail that fails SPF or DKIM checks</li>
+          <li><strong>Domain verification:</strong> prove ownership to Google Search Console, GitHub, Stripe, and other platforms</li>
+          <li><strong>BIMI:</strong> brand logo display in supported email clients</li>
+        </ul>
+
+        <p>TXT records can be up to 255 characters per string, with multiple strings concatenated for longer values. Always test your SPF/DKIM/DMARC setup after making changes.</p>
+      </div>
+
+      <h2 id="ns-record">6. NS Record — Nameserver</h2>
+      <div class="record-card">
+        <h3><code>NS</code> Nameserver Record</h3>
+        <p>The <strong>NS record</strong> delegates authority for a domain (or subdomain) to a set of nameservers. These nameservers are the authoritative source for all other records in the zone. Every domain must have at least two NS records for redundancy.</p>
+
+        <p><strong>What it looks like:</strong></p>
+        <pre><code>example.com.    86400    IN    NS    ns1.example.com.
+example.com.    86400    IN    NS    ns2.example.com.
+; Cloudflare:
+example.com.    86400    IN    NS    alan.ns.cloudflare.com.
+example.com.    86400    IN    NS    mary.ns.cloudflare.com.</code></pre>
+
+        <p><strong>How delegation works:</strong></p>
+        <ol>
+          <li>The parent zone (e.g., <code>.com</code> TLD) stores NS records pointing to your nameservers</li>
+          <li>Your nameservers hold the authoritative zone file with all A, MX, TXT, etc. records</li>
+          <li>If NS records at the parent and the zone itself don't match, you have a <strong>lame delegation</strong></li>
+        </ol>
+      </div>
+
+      <h2 id="soa-record">7. SOA Record — Start of Authority</h2>
+      <div class="record-card">
+        <h3><code>SOA</code> Start of Authority Record</h3>
+        <p>The <strong>SOA record</strong> is the administrative header of a DNS zone. It stores metadata about the zone itself — the primary nameserver, the admin's email, and timing values that control zone transfers and caching behavior.</p>
+
+        <p><strong>What it looks like:</strong></p>
+        <pre><code>example.com.  3600  IN  SOA  ns1.example.com. admin.example.com. (
+  2026061201  ; Serial (YYYYMMDDNN format)
+  7200        ; Refresh (2 hours)
+  3600        ; Retry (1 hour)
+  1209600     ; Expire (14 days)
+  86400       ; Minimum TTL (1 day)
+)</code></pre>
+
+        <ul>
+          <li><strong>MNAME:</strong> primary master nameserver</li>
+          <li><strong>RNAME:</strong> admin email (the <code>@</code> is replaced with a dot — <code>admin.example.com</code> means admin@example.com)</li>
+          <li><strong>Serial:</strong> version number — secondary nameservers check this to know when to pull updates</li>
+          <li><strong>Refresh:</strong> how often secondaries check for changes</li>
+          <li><strong>Retry:</strong> how long to wait after a failed refresh before retrying</li>
+          <li><strong>Expire:</strong> how long secondaries keep serving data if they can't reach the primary</li>
+          <li><strong>Minimum TTL:</strong> default TTL for negative caching (NXDOMAIN responses)</li>
+        </ul>
+      </div>
+
+      <h2 id="ptr-record">8. PTR Record — Reverse DNS</h2>
+      <div class="record-card">
+        <h3><code>PTR</code> Pointer Record</h3>
+        <p>A <strong>PTR record</strong> does the opposite of an A record — it maps an IP address back to a domain name. This is called <strong>reverse DNS</strong> (rDNS). It lives in a special <code>.arpa</code> zone and is primarily used for email deliverability and server identification.</p>
+
+        <p><strong>What it looks like (in the reverse zone):</strong></p>
+        <pre><code>34.216.184.93.in-addr.arpa.  300  IN  PTR  example.com.</code></pre>
+
+        <ul>
+          <li>IPv4 PTRs live in <code>in-addr.arpa</code> (IP octets reversed)</li>
+          <li>IPv6 PTRs live in <code>ip6.arpa</code> (each hex digit as a separate label, reversed)</li>
+          <li>You typically <strong>can't set PTR records yourself</strong> — the owner of the IP block (your hosting provider or ISP) must configure them</li>
+          <li>Many mail servers <strong>reject or flag email</strong> from IPs without valid PTR records</li>
+        </ul>
+      </div>
+
+      <h2 id="srv-record">9. SRV Record — Service Locator</h2>
+      <div class="record-card">
+        <h3><code>SRV</code> Service Record</h3>
+        <p>An <strong>SRV record</strong> specifies the hostname and port for specific services. Unlike MX records (which only handle mail), SRV is a generic mechanism for service discovery — used by VoIP, instant messaging, LDAP, and modern protocols.</p>
+
+        <p><strong>What it looks like:</strong></p>
+        <pre><code>_sip._tcp.example.com.  300  IN  SRV  10 60 5060 sipserver.example.com.
+_xmpp._tcp.example.com. 300  IN  SRV  5  0  5222 xmpp.example.com.
+_ldap._tcp.example.com. 300  IN  SRV  0  0  389  ldap.example.com.</code></pre>
+
+        <ul>
+          <li><strong>Name format:</strong> <code>_service._proto.domain</code> (e.g., <code>_sip._tcp</code>, <code>_xmpp._tcp</code>)</li>
+          <li><strong>Priority:</strong> like MX, lower = preferred</li>
+          <li><strong>Weight:</strong> load-balancing among servers with the same priority</li>
+          <li><strong>Port:</strong> the TCP/UDP port number the service listens on</li>
+          <li><strong>Target:</strong> the hostname providing the service</li>
+        </ul>
+      </div>
+
+      <h2 id="caa-record">10. CAA Record — Certificate Authority Authorization</h2>
+      <div class="record-card">
+        <h3><code>CAA</code> Certificate Authority Authorization</h3>
+        <p>The <strong>CAA record</strong> specifies which Certificate Authorities (CAs) are allowed to issue SSL/TLS certificates for your domain. It's a DNS-level security control that prevents unauthorized certificate issuance — a defense against mis-issued certificates and MITM attacks.</p>
+
+        <p><strong>What it looks like:</strong></p>
+        <pre><code>; Allow only Let's Encrypt
+example.com.  300  IN  CAA  0 issue "letsencrypt.org"
+
+; Allow only DigiCert
+example.com.  300  IN  CAA  0 issue "digicert.com"
+
+; Report policy violations
+example.com.  300  IN  CAA  0 iodef "mailto:security@example.com"</code></pre>
+
+        <ul>
+          <li><strong>Flags:</strong> 0 (standard) or 1 (critical — CA must understand this tag)</li>
+          <li><strong>Tag:</strong> <code>issue</code> (authorize CA), <code>issuewild</code> (authorize wildcard certs), <code>iodef</code> (violation reporting URL/email)</li>
+          <li>CAs <strong>must</strong> check CAA records before issuing certificates (mandated by CA/Browser Forum since 2017)</li>
+          <li>An empty CAA record (<code>issue ";"</code>) means <strong>no CA is allowed</strong> — useful for domains you never want to have HTTPS</li>
+        </ul>
+      </div>
+
+      <div class="tool-cta">
+        <p><strong>🔒 Check your CAA, SSL, and DNS config:</strong> <a href="ssl-checker.html">SSL Certificate Checker</a> verifies your certificate. <a href="dns-lookup.html">DNS Record Lookup</a> shows all records including CAA. <a href="whois.html">WHOIS Lookup</a> confirms domain registration. All free, no signup.</p>
+      </div>
+
+      <h2 id="quick-ref">Quick Reference Table</h2>
+      <table class="record-table">
+        <thead>
+          <tr><th>Record</th><th>Purpose</th><th>Value Example</th><th>Critical For</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>A</code></td><td>Domain → IPv4</td><td><code>93.184.216.34</code></td><td>Website hosting</td></tr>
+          <tr><td><code>AAAA</code></td><td>Domain → IPv6</td><td><code>2606:2800:220:1::1946</code></td><td>IPv6 connectivity</td></tr>
+          <tr><td><code>CNAME</code></td><td>Alias → canonical name</td><td><code>example.com.</code></td><td>CDN, subdomain redirect</td></tr>
+          <tr><td><code>MX</code></td><td>Incoming mail server</td><td><code>10 mail.example.com.</code></td><td>Email delivery</td></tr>
+          <tr><td><code>TXT</code></td><td>Arbitrary text data</td><td><code>"v=spf1 ..."</code></td><td>SPF, DKIM, DMARC, verification</td></tr>
+          <tr><td><code>NS</code></td><td>Authoritative nameserver</td><td><code>ns1.example.com.</code></td><td>DNS delegation</td></tr>
+          <tr><td><code>SOA</code></td><td>Zone metadata</td><td><code>ns1 admin serial...</code></td><td>Zone transfers, TTL defaults</td></tr>
+          <tr><td><code>PTR</code></td><td>IP → domain (reverse)</td><td><code>example.com.</code></td><td>Email deliverability</td></tr>
+          <tr><td><code>SRV</code></td><td>Service host + port</td><td><code>10 60 5060 sip.example.com.</code></td><td>VoIP, XMPP, LDAP</td></tr>
+          <tr><td><code>CAA</code></td><td>Authorized CA for certs</td><td><code>0 issue "letsencrypt.org"</code></td><td>SSL/TLS security</td></tr>
+        </tbody>
+      </table>
+
+      <p style="margin-top: 24px;">
+        For a deeper dive into how all these records work together, read our <a href="what-is-dns.html">What is DNS?</a> guide. To check your own domain's records, see <a href="how-to-check-dns-records.html">How to Check DNS Records</a> for step-by-step instructions with dig, nslookup, and online tools.
+      </p>
+
+      <h2 id="faq">FAQ</h2>
+
+      <div class="faq-item">
+        <h3>What's the difference between an A record and a CNAME?</h3>
+        <p>An <strong>A record</strong> maps a domain directly to an IPv4 address. A <strong>CNAME</strong> maps a domain to another domain name, which is then resolved to an IP via that target's A record. Use an A record when you know the IP address. Use a CNAME when pointing to a hostname managed by a third party (CDN, hosting platform) whose IP may change. The root domain (apex) cannot have a CNAME — it must use an A record.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How many DNS record types are there?</h3>
+        <p>The IANA DNS registry lists over 80 record types. The 10 covered here are the ones you'll encounter in everyday web and email configuration. Advanced types include <code>DS</code> (DNSSEC delegation signer), <code>RRSIG</code> (DNSSEC signature), <code>NSEC</code>/<code>NSEC3</code> (DNSSEC authenticated denial), <code>TLSA</code> (DANE/TLS authentication), and <code>SSHFP</code> (SSH key fingerprint). For most domains, A, AAAA, CNAME, MX, TXT, and NS cover everything you need.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Can a domain have multiple A records?</h3>
+        <p>Yes — this is called <strong>DNS round-robin</strong>. Multiple A records with the same name distribute traffic across different IPs. The DNS resolver returns all IPs, rotating the order with each query. This is a lightweight form of load balancing, though it doesn't account for server health or capacity. Modern setups typically use a load balancer with a single A record instead.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How do I check which DNS records my domain has?</h3>
+        <p>Use our free <a href="dns-lookup.html">DNS Record Lookup</a> tool — enter your domain and it returns A, AAAA, CNAME, MX, TXT, NS, and SOA records in one click. For advanced queries or specific record types, use <code>dig yourdomain.com ANY</code> from the command line (though many DNS servers disable ANY queries for security reasons).</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>What happens if I set the wrong record type?</h3>
+        <p>The effects depend on the record. Wrong A record = website unreachable. Wrong MX = email bounces. Wrong TXT/SPF = your emails get marked as spam. Wrong CAA = certificate renewal fails. Always verify changes with <a href="dns-lookup.html">DNS Lookup</a> immediately after editing records, and set low TTLs (300 seconds) before making changes so you can revert quickly if something breaks.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How long do DNS record changes take to propagate?</h3>
+        <p>Changes are <strong>instant on your authoritative nameservers</strong> — but cached records elsewhere expire based on the TTL. If your TTL was 3600 (1 hour), clients and intermediate resolvers may serve the old value for up to 1 hour. To minimize propagation time, lower TTLs to 300 (5 minutes) at least one TTL period <em>before</em> making changes. Use the <a href="dns-lookup.html">DNS Record Lookup</a> to verify changes from multiple locations.</p>
+      </div>
+    </article>
+  </main>
+  <footer>
+    <div class="container">
+      <p>Built by <a href="https://github.com/iPythoning">iPythoning</a>. Data via Google DNS, Cloudflare, RDAP.</p>
+      <nav>
+        <a href="index.html">Home</a> · <a href="what-is-dns.html">What is DNS?</a> · <a href="how-to-check-dns-records.html">Check DNS Records</a> · <a href="https://github.com/iPythoning/dns-tools">GitHub</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>
