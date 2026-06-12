@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free DNSSEC checker — verify if a domain has DNSSEC enabled. Check DNSKEY, DS, and RRSIG records. Validate DNS security configuration.">
+  <title>DNSSEC Checker — Check DNSSEC Configuration for Any Domain</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/dnssec-checker.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "DNSSEC Checker",
+    "url": "https://ipythoning.github.io/dns-tools/dnssec-checker.html",
+    "description": "Check if a domain has DNSSEC enabled by querying DNSKEY, DS, and RRSIG records. Verify DNS security configuration.",
+    "applicationCategory": "DeveloperApplication",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>DNSSEC Checker</h1>
+      <p>Check if a domain has DNSSEC enabled. Verifies DNSKEY and RRSIG records for DNS security validation.</p>
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="domainInput" placeholder="example.com" autofocus autocomplete="off" autocapitalize="none" spellcheck="false">
+      <button id="checkBtn">Check DNSSEC</button>
+    </div>
+
+    <div id="errorContainer"></div>
+    <div id="resultContainer">
+      <div class="empty-state">
+        <p>Enter a domain name to check its DNSSEC configuration</p>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h2>What is DNSSEC?</h2>
+      <p>DNSSEC (Domain Name System Security Extensions) adds cryptographic signatures to DNS records. It protects against DNS spoofing and cache poisoning attacks by allowing DNS resolvers to verify that DNS responses are authentic and haven't been tampered with.</p>
+      <p>When DNSSEC is enabled, the domain publishes DNSKEY and RRSIG records, and the parent zone publishes a DS record that chains the trust to the root zone.</p>
+    </div>
+  </main>
+
+  <script>
+    const GOOGLE_DOH = 'https://dns.google/resolve';
+
+    function cleanDomain(input) {
+      return input.trim()
+        .replace(/^https?:\/\//, '')
+        .replace(/\/.*$/, '')
+        .replace(/^www\./, '')
+        .toLowerCase();
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorContainer');
+      el.innerHTML = msg ? `<div class="error-msg">${msg}</div>` : '';
+    }
+
+    function showLoading() {
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Checking DNSSEC configuration…</p>
+        </div>`;
+    }
+
+    async function doCheck() {
+      const input = document.getElementById('domainInput').value;
+      const domain = cleanDomain(input);
+      if (!domain) {
+        showError('Please enter a valid domain name');
+        return;
+      }
+      if (!domain.includes('.')) {
+        showError('Please enter a complete domain (e.g., example.com)');
+        return;
+      }
+
+      showError('');
+      showLoading();
+      const btn = document.getElementById('checkBtn');
+      btn.disabled = true;
+
+      const start = performance.now();
+      const recordTypes = ['DNSKEY', 'DS', 'RRSIG', 'NSEC', 'NSEC3'];
+      const results = {};
+
+      try {
+        const queries = recordTypes.map(async (type) => {
+          const url = `${GOOGLE_DOH}?name=${encodeURIComponent(domain)}&type=${type}`;
+          const res = await fetch(url);
+          if (!res.ok) return { type, records: [], error: `HTTP ${res.status}` };
+          const data = await res.json();
+          return { type, records: data.Answer || [], status: data.Status };
+        });
+
+        const allResults = await Promise.all(queries);
+        const timeMs = Math.round(performance.now() - start);
+
+        for (const r of allResults) {
+          results[r.type] = r;
+        }
+
+        showDNSSECResults(domain, results, timeMs);
+      } catch (err) {
+        const timeMs = Math.round(performance.now() - start);
+        showError(`Failed to check DNSSEC: ${err.message}`);
+        showDNSSECResults(domain, {}, timeMs);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function showDNSSECResults(domain, results, timeMs) {
+      const hasDNSKEY = results.DNSKEY && results.DNSKEY.records && results.DNSKEY.records.length > 0;
+      const hasDS = results.DS && results.DS.records && results.DS.records.length > 0;
+      const hasRRSIG = results.RRSIG && results.RRSIG.records && results.RRSIG.records.length > 0;
+      const dnssecEnabled = hasDNSKEY || hasDS || hasRRSIG;
+
+      let statusClass = dnssecEnabled ? 'status-ok' : 'status-warn';
+      let statusText = dnssecEnabled ? '✅ DNSSEC is enabled' : '⚠️ DNSSEC is NOT enabled';
+      let statusDetail = dnssecEnabled
+        ? 'The domain publishes DNSSEC records. DNS responses for this domain are cryptographically signed.'
+        : 'No DNSSEC records (DNSKEY, DS, RRSIG) found. This domain is not protected against DNS spoofing.';
+
+      let cards = [
+        { type: 'DNSKEY', label: 'DNSKEY Records', desc: 'Public keys used for DNSSEC validation', found: hasDNSKEY, count: hasDNSKEY ? results.DNSKEY.records.length : 0 },
+        { type: 'DS', label: 'DS Records', desc: 'Delegation Signer — hash of DNSKEY, published in parent zone', found: hasDS, count: hasDS ? results.DS.records.length : 0 },
+        { type: 'RRSIG', label: 'RRSIG Records', desc: 'Cryptographic signatures for DNS record sets', found: hasRRSIG, count: hasRRSIG ? results.RRSIG.records.length : 0 },
+        { type: 'NSEC', label: 'NSEC/NSEC3', desc: 'Authenticated denial of existence (proof a record does NOT exist)', found: results.NSEC?.records?.length > 0 || results.NSEC3?.records?.length > 0, count: (results.NSEC?.records?.length || 0) + (results.NSEC3?.records?.length || 0) },
+      ];
+
+      let cardsHtml = cards.map(c => `
+        <div class="dnssec-card">
+          <div class="dnssec-card-header">
+            <span class="dnssec-indicator">${c.found ? '✅' : '❌'}</span>
+            <span>${c.label}</span>
+            ${c.found ? `<span class="dnssec-count">${c.count} records</span>` : ''}
+          </div>
+          <p>${c.desc}</p>
+        </div>
+      `).join('');
+
+      let recordsHtml = '';
+      if (hasDNSKEY) {
+        recordsHtml += '<h4>DNSKEY Records</h4><table class="result-table"><thead><tr><th>Flags</th><th>Protocol</th><th>Algorithm</th><th>Key</th></tr></thead><tbody>';
+        recordsHtml += results.DNSKEY.records.map(r => {
+          const parts = r.data.split(' ');
+          return `<tr><td>${parts[0]}</td><td>${parts[1]}</td><td>${parts[2]}</td><td class="truncate">${parts[3] ? parts[3].substring(0, 40) + '…' : '—'}</td></tr>`;
+        }).join('');
+        recordsHtml += '</tbody></table>';
+      }
+
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <h3>${domain} — DNSSEC Status</h3>
+            <span class="result-time">${timeMs}ms</span>
+          </div>
+          <div class="dnssec-status ${statusClass}">
+            <h4>${statusText}</h4>
+            <p>${statusDetail}</p>
+          </div>
+          <div class="dnssec-grid">${cardsHtml}</div>
+          ${recordsHtml}
+        </div>`;
+    }
+
+    document.getElementById('checkBtn').addEventListener('click', doCheck);
+    document.getElementById('domainInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doCheck();
+    });
+    document.getElementById('domainInput').focus();
+  </script>
+</body>
+</html>

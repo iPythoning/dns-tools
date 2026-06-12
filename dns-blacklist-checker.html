@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Free DNS blacklist checker — check if a domain or IP is listed on common email spam blacklists. Verify email reputation with Spamhaus, Barracuda, and more.">
+  <title>DNS Blacklist Checker — Check Email Spam Blacklist Status</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="canonical" href="https://ipythoning.github.io/dns-tools/dns-blacklist-checker.html">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "DNS Blacklist Checker",
+    "url": "https://ipythoning.github.io/dns-tools/dns-blacklist-checker.html",
+    "description": "Check if a domain or IP address is listed on common email spam blacklists. Verify email reputation against Spamhaus, Barracuda, and other DNSBL services.",
+    "applicationCategory": "DeveloperApplication",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+  }
+  </script>
+</head>
+<body>
+  <main class="container">
+    <a href="index.html" class="back-link">← All Tools</a>
+    <div class="tool-header">
+      <h1>DNS Blacklist Checker</h1>
+      <p>Check if a domain or IP address is listed on common email spam blacklists (DNSBL). Essential for email deliverability troubleshooting.</p>
+    </div>
+
+    <div class="input-group">
+      <input type="text" id="domainInput" placeholder="example.com or 192.0.2.1" autofocus autocomplete="off" autocapitalize="none" spellcheck="false">
+      <button id="checkBtn">Check Blacklists</button>
+    </div>
+
+    <div id="errorContainer"></div>
+    <div id="resultContainer">
+      <div class="empty-state">
+        <p>Enter a domain name or IP address to check against common DNS blacklists</p>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h2>What are DNS Blacklists (DNSBL)?</h2>
+      <p>DNS Blacklists (DNSBL, also called RBL — Realtime Blackhole Lists) are databases of IP addresses and domains known to send spam or malicious email. Mail servers query these lists to decide whether to accept, reject, or flag incoming email.</p>
+      <p>Common blacklists include <strong>Spamhaus</strong> (SBL, XBL, PBL), <strong>Barracuda</strong>, <strong>SpamCop</strong>, <strong>Surriel</strong>, and others. Being listed on any of them can seriously impact email deliverability.</p>
+    </div>
+  </main>
+
+  <script>
+    const GOOGLE_DOH = 'https://dns.google/resolve';
+
+    // Common DNSBL zones with descriptions
+    const BLACKLISTS = [
+      { zone: 'zen.spamhaus.org', name: 'Spamhaus ZEN', desc: 'Combined Spamhaus list (SBL + XBL + PBL)' },
+      { zone: 'bl.spamcop.net', name: 'SpamCop', desc: 'Real-time blocking list based on spam reports' },
+      { zone: 'b.barracudacentral.org', name: 'Barracuda', desc: 'Barracuda Networks reputation block list' },
+      { zone: 'dnsbl.sorbs.net', name: 'SORBS', desc: 'Spam and Open Relay Blocking System' },
+      { zone: 'psbl.surriel.com', name: 'Surriel PSBL', desc: 'Passive spam block list' },
+      { zone: 'ubl.unsubscore.com', name: 'Lashback UBL', desc: 'Unsubscribe blacklist — domains with bad unsubscribe practices' },
+      { zone: 'dnsbl-1.uceprotect.net', name: 'UCEPROTECT L1', desc: 'Single IP spam sources' },
+      { zone: 'dnsbl-2.uceprotect.net', name: 'UCEPROTECT L2', desc: 'ASN/netblock level listing' },
+      { zone: 'dnsbl-3.uceprotect.net', name: 'UCEPROTECT L3', desc: 'Full ASN/bogon listing (very aggressive)' },
+      { zone: 'all.spamrats.com', name: 'SpamRATS', desc: 'All SpamRATS lists combined' },
+      { zone: 'truncate.gbudb.net', name: 'GBUdb', desc: 'Truncate score-based listing' },
+      { zone: 'spam.dnsbl.sorbs.net', name: 'SORBS Spam', desc: 'SORBS spam sources list' },
+    ];
+
+    function cleanDomain(input) {
+      return input.trim()
+        .replace(/^https?:\/\//, '')
+        .replace(/\/.*$/, '')
+        .toLowerCase();
+    }
+
+    function reverseIP(ip) {
+      // Reverse IP for DNSBL query: 192.0.2.1 -> 1.2.0.192
+      const parts = ip.trim().split('.');
+      if (parts.length === 4 && parts.every(p => /^\d+$/.test(p))) {
+        return parts.reverse().join('.');
+      }
+      return null;
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorContainer');
+      el.innerHTML = msg ? `<div class="error-msg">${msg}</div>` : '';
+    }
+
+    function showLoading() {
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="loading">
+          <div class="spinner"></div>
+          <p>Checking ${BLACKLISTS.length} blacklists…</p>
+        </div>`;
+    }
+
+    async function doCheck() {
+      const input = document.getElementById('domainInput').value;
+      const target = cleanDomain(input);
+      if (!target) {
+        showError('Please enter a valid domain or IP address');
+        return;
+      }
+
+      const reversedIP = reverseIP(target);
+
+      showError('');
+      showLoading();
+      const btn = document.getElementById('checkBtn');
+      btn.disabled = true;
+
+      const start = performance.now();
+      const results = [];
+
+      try {
+        const queries = BLACKLISTS.map(async (bl) => {
+          // DNSBL query: <reversed-ip>.<zone>
+          const queryName = `${target}.${bl.zone}`;
+          const url = `${GOOGLE_DOH}?name=${encodeURIComponent(queryName)}&type=A`;
+          try {
+            const res = await fetch(url);
+            if (!res.ok) return { ...bl, listed: false, details: 'Query failed' };
+            const data = await res.json();
+            const hasAnswer = data.Answer && data.Answer.length > 0;
+            const answer = hasAnswer ? data.Answer[0].data : null;
+            return { ...bl, listed: hasAnswer, answer };
+          } catch {
+            return { ...bl, listed: false, details: 'Network error' };
+          }
+        });
+
+        const allResults = await Promise.all(queries);
+        const timeMs = Math.round(performance.now() - start);
+
+        const listed = allResults.filter(r => r.listed);
+        const clean = allResults.filter(r => !r.listed);
+
+        showResults(target, listed, clean, allResults.length, timeMs);
+      } catch (err) {
+        const timeMs = Math.round(performance.now() - start);
+        showError(`Check failed: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function showResults(target, listed, clean, total, timeMs) {
+      const statusClass = listed.length === 0 ? 'status-ok' : 'status-warn';
+      const statusIcon = listed.length === 0 ? '✅' : '⚠️';
+      const statusText = listed.length === 0
+        ? 'Not listed on any blacklist'
+        : `Listed on ${listed.length} of ${total} blacklists`;
+
+      let listedHtml = listed.length > 0 ? `
+        <h4>Listed (${listed.length})</h4>
+        <table class="result-table">
+          <thead><tr><th>Blacklist</th><th>Description</th><th>Response</th></tr></thead>
+          <tbody>
+            ${listed.map(r => `<tr class="row-warn"><td>${r.name}</td><td>${r.desc}</td><td><code>${r.answer || '—'}</code></td></tr>`).join('')}
+          </tbody>
+        </table>
+      ` : '';
+
+      let cleanHtml = `
+        <h4>Clean (${clean.length})</h4>
+        <table class="result-table">
+          <thead><tr><th>Blacklist</th><th>Description</th><th>Status</th></tr></thead>
+          <tbody>
+            ${clean.map(r => `<tr><td>${r.name}</td><td>${r.desc}</td><td class="status-cell-ok">✅ Not listed</td></tr>`).join('')}
+          </tbody>
+        </table>
+      `;
+
+      document.getElementById('resultContainer').innerHTML = `
+        <div class="result-card">
+          <div class="result-header">
+            <h3>${target} — Blacklist Status</h3>
+            <span class="result-time">${timeMs}ms</span>
+          </div>
+          <div class="dnssec-status ${statusClass}">
+            <h4>${statusIcon} ${statusText}</h4>
+          </div>
+          ${listedHtml}
+          ${cleanHtml}
+          <p class="note">Note: This checks DNS-based blacklists using Google DNS. Some lists may have usage limits. For production email monitoring, use each provider's official API.</p>
+        </div>`;
+    }
+
+    document.getElementById('checkBtn').addEventListener('click', doCheck);
+    document.getElementById('domainInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doCheck();
+    });
+    document.getElementById('domainInput').focus();
+  </script>
+</body>
+</html>
